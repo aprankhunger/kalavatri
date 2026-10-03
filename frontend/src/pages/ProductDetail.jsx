@@ -3,10 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { getProductBySlug, getProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import Newsletter from '../components/Newsletter';
+import { useCart } from '../context/CartContext';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
   const { slug } = useParams();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,12 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('details');
+  const [isAdded, setIsAdded] = useState(false);
+
+  // Reset isAdded if user changes their mind on size or color
+  useEffect(() => {
+    setIsAdded(false);
+  }, [selectedSize, selectedColor]);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -180,9 +188,22 @@ const ProductDetail = () => {
               <span>{quantity}</span>
               <button onClick={() => setQuantity(quantity + 1)}>+</button>
             </div>
-            <button className="btn btn-primary add-to-cart-btn">
-              Add to Cart
-            </button>
+            
+            {isAdded ? (
+              <Link to="/cart" className="btn btn-primary add-to-cart-btn" style={{ textAlign: 'center' }}>
+                View Cart
+              </Link>
+            ) : (
+              <button 
+                className="btn btn-primary add-to-cart-btn"
+                onClick={() => {
+                  addToCart(product, quantity, selectedSize, selectedColor);
+                  setIsAdded(true);
+                }}
+              >
+                Add to Cart
+              </button>
+            )}
           </div>
         </div>
       </section>

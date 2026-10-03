@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiShoppingCart, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { useCart } from '../context/CartContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcementVisible, setAnnouncementVisible] = useState(true);
+  const { cartCount } = useCart();
 
   return (
     <>
@@ -46,7 +48,10 @@ const Navbar = () => {
               </div>
               <div className="nav-actions">
                 <button className="mobile-search-btn"><FiSearch size={24} /></button>
-                <button aria-label="Cart"><FiShoppingCart size={24} /></button>
+                <Link to="/cart" className="cart-btn" aria-label="Cart">
+                  <FiShoppingCart size={24} />
+                  {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                </Link>
                 <button aria-label="Account"><FiUser size={24} /></button>
               </div>
             </div>
