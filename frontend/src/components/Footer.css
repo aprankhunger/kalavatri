@@ -1,0 +1,101 @@
+/* === Footer === */
+.footer {
+  background: var(--light-gray);
+  padding-top: 140px; /* Accounts for overlapping newsletter */
+  padding-bottom: 80px;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 60px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--border);
+}
+
+.footer-brand-col {
+  max-width: 280px;
+}
+.footer-brand {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 24px;
+}
+.footer-desc {
+  font-size: 14px;
+  color: var(--text-body);
+  margin-bottom: 36px;
+  line-height: 1.6;
+}
+.social-links {
+  display: flex;
+  gap: 12px;
+}
+.social-link {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  transition: all var(--transition);
+}
+.social-link:hover {
+  background: var(--text-dark);
+  color: var(--white);
+}
+
+.footer-links-grid {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: 20px;
+}
+.footer-col h4 {
+  font-family: var(--font-body);
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.footer-col ul li { margin-bottom: 16px; }
+.footer-col ul li a {
+  font-size: 16px;
+  color: var(--text-body);
+}
+.footer-col ul li a:hover { color: var(--text-dark); }
+
+.footer-bottom {
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-bottom p {
+  font-size: 14px;
+  color: var(--text-body);
+}
+.payment-badges {
+  display: flex;
+  gap: 8px;
+}
+.badge {
+  background: var(--white);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 1024px) {
+  .footer-top { flex-direction: column; }
+  .footer-links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+}
+@media (max-width: 768px) {
+  .footer { padding-top: 200px; padding-bottom: 40px; }
+  .footer-brand-col { max-width: 100%; }
+  .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
+}

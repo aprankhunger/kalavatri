@@ -1,0 +1,109 @@
+/* === Hero === */
+.hero {
+  background: var(--hero-gray);
+  padding-top: 80px;
+  overflow: hidden;
+}
+.hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+.hero-content {
+  flex: 1;
+  max-width: 600px;
+  padding-bottom: 80px;
+}
+.hero-title {
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1;
+  margin-bottom: 32px;
+  letter-spacing: -1px;
+}
+.hero-description {
+  color: var(--text-body);
+  font-size: 16px;
+  margin-bottom: 32px;
+}
+.btn-full-mobile {
+  padding: 16px 54px;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-top: 48px;
+}
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+}
+.stat-number {
+  font-family: var(--font-body);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 16px;
+  color: var(--text-body);
+  margin-top: 4px;
+}
+.stat-divider {
+  width: 1px;
+  height: 74px;
+  background: var(--border);
+}
+
+.hero-image {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+.hero-image img {
+  width: 100%;
+  max-width: 500px;
+  object-fit: cover;
+  border-radius: 40px 40px 0 0;
+  margin-bottom: -10px; /* Flush to bottom */
+}
+.hero-star {
+  position: absolute;
+}
+.hero-star svg { width: 100%; height: 100%; }
+.star-1 {
+  width: 56px; height: 56px;
+  top: 10%; right: 10%;
+}
+.star-2 {
+  width: 104px; height: 104px;
+  top: 40%; left: 0%;
+}
+
+@media (max-width: 1024px) {
+  .hero { padding-top: 40px; }
+  .hero-inner { flex-direction: column; text-align: center; gap: 0; }
+  .hero-content { padding-bottom: 40px; max-width: 100%; }
+  .hero-description { margin: 0 auto 32px; }
+  .hero-stats { justify-content: center; gap: 24px; }
+  .star-2 { left: 10%; }
+}
+@media (max-width: 768px) {
+  .hero-title { font-size: 36px; }
+  .hero-description { font-size: 14px; }
+  .btn-full-mobile { width: 100%; }
+  .stat-number { font-size: 24px; }
+  .stat-label { font-size: 12px; }
+  .stat-divider { height: 52px; }
+  .mobile-hide { display: none; }
+  .stat-full-mobile {
+    width: 100%;
+    align-items: center;
+    margin-top: 12px;
+  }
+}

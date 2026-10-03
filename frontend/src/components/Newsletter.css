@@ -1,0 +1,53 @@
+/* === Newsletter === */
+.newsletter-box {
+  background: var(--maroon-dark);
+  border-radius: var(--radius-lg);
+  padding: 36px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  transform: translateY(50%); /* overlap footer */
+}
+.newsletter-title {
+  color: var(--white);
+  font-size: 40px;
+  line-height: 1.1;
+  max-width: 550px;
+}
+.newsletter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  max-width: 350px;
+}
+.input-wrapper {
+  position: relative;
+}
+.newsletter-form input {
+  width: 100%;
+  padding: 16px 20px 16px 48px;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  font-size: 16px;
+  color: var(--text-dark);
+}
+.newsletter-form input::placeholder { color: var(--text-muted); }
+.input-icon {
+  position: absolute;
+  left: 20px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  width: 20px; height: 20px;
+}
+
+@media (max-width: 1024px) {
+  .newsletter-box {
+    flex-direction: column;
+    text-align: center;
+    padding: 32px 24px;
+  }
+  .newsletter-title { font-size: 32px; }
+  .newsletter-form { max-width: 100%; width: 100%; }
+}

@@ -1,0 +1,19 @@
+/* App-level layout styles */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* Decorative border */
+.decorative-border {
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--maroon), var(--gold), var(--maroon-dark), var(--gold), var(--maroon));
+  background-size: 200% 100%;
+  animation: borderShimmer 6s ease infinite;
+}

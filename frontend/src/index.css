@@ -1,0 +1,163 @@
+/* ========================================
+   KALAVATRI — Design System (Figma Match)
+   Color Palette:
+     #731F26  Deep maroon/burgundy (primary dark)
+     #59181E  Darker maroon (primary darker)
+     #D9AE79  Warm gold/tan (accent)
+     #D9CEC1  Warm beige/light gray (subtle background)
+     #F2E8DC  Cream/off-white (light background)
+     #FFFFFF  White (Main Background)
+   ======================================== */
+
+/* === CSS Custom Properties === */
+:root {
+  --maroon: #731F26;
+  --maroon-dark: #59181E;
+  --gold: #D9AE79;
+  --beige: #D9CEC1;
+  --cream: #F2E8DC;
+  --white: #FFFFFF;
+  --light-gray: #D9CEC1; /* Swapped from #F0F0F0 to the requested warm beige/light gray */
+  --hero-gray: #F2E8DC; /* Swapped from #F2F0F1 to the requested cream/off-white */
+  
+  --text-dark: #2A2220; /* Darkened brown/black instead of pure #000 for warmth */
+  --text-body: rgba(42, 34, 32, 0.7);
+  --text-muted: rgba(42, 34, 32, 0.5);
+  
+  --border: var(--beige);
+  --bg-main: var(--white);
+  --bg-alt: var(--cream);
+
+  --star: var(--gold);
+  --sale: #D9AE79; /* Keep gold accent for sale tags to match palette */
+
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Poppins', sans-serif;
+
+  --shadow-sm: 0 1px 3px rgba(89, 24, 30, 0.05);
+  --shadow-md: 0 4px 14px rgba(89, 24, 30, 0.05);
+  --shadow-lg: 0 20px 40px rgba(89, 24, 30, 0.08);
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 40px;
+  --radius-full: 9999px;
+
+  --transition: 250ms ease;
+  --container: 1240px;
+}
+
+/* === Reset === */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-body);
+  background: var(--bg-main);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+ul { list-style: none; }
+input { font-family: inherit; border: none; outline: none; }
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-dark);
+  text-transform: uppercase;
+}
+
+/* === Container === */
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+@media (min-width: 768px) {
+  .container { padding: 0 24px; }
+}
+
+/* === Buttons (Figma Match) === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 16px;
+  padding: 16px 54px;
+  border-radius: var(--radius-full);
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--maroon);
+  color: var(--white);
+}
+.btn-primary:hover {
+  background: var(--maroon-dark);
+  box-shadow: 0 10px 20px rgba(115, 31, 38, 0.2);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover {
+  border-color: var(--text-dark);
+  background: rgba(0,0,0,0.02);
+}
+.btn-gold {
+  background: var(--white);
+  color: var(--text-dark);
+  font-weight: 500;
+}
+.btn-gold:hover {
+  background: var(--light-gray);
+}
+.btn-full { width: 100%; }
+
+/* === Section Common === */
+.section {
+  padding: 72px 0;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.section-header h2 {
+  font-size: clamp(32px, 4vw, 48px);
+  margin-bottom: 0;
+  letter-spacing: -0.5px;
+}
+.view-all-wrapper {
+  text-align: center;
+  margin-top: 36px;
+}
+
+/* === Animations === */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

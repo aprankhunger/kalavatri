@@ -1,0 +1,30 @@
+.testimonial-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 32px;
+}
+.testimonial-stars {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.star-filled { fill: var(--star); }
+.testimonial-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.verified-badge {
+  display: flex;
+}
+.testimonial-text {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
