@@ -1,0 +1,292 @@
+/* ========================================================
+   KALAVATRI — Admin Panel Luxury Design System
+   Maroon (#731F26) & Gold (#D9AE79) Dark/Warm Theme
+   ======================================================== */
+
+:root {
+  --admin-bg-base: #120E0E;
+  --admin-bg-surface: #1B1516;
+  --admin-bg-card: #231C1D;
+  --admin-bg-card-hover: #2D2325;
+  --admin-border: #382C2E;
+  --admin-border-light: rgba(217, 174, 121, 0.15);
+
+  --admin-maroon: #731F26;
+  --admin-maroon-dark: #59181E;
+  --admin-maroon-glow: rgba(115, 31, 38, 0.35);
+
+  --admin-gold: #D9AE79;
+  --admin-gold-hover: #E4C193;
+  --admin-cream: #F2E8DC;
+  --admin-beige: #D9CEC1;
+
+  --admin-text-primary: #FFFFFF;
+  --admin-text-secondary: rgba(242, 232, 220, 0.75);
+  --admin-text-muted: rgba(242, 232, 220, 0.45);
+
+  --admin-success: #10B981;
+  --admin-success-bg: rgba(16, 185, 129, 0.12);
+  --admin-warning: #F59E0B;
+  --admin-warning-bg: rgba(245, 158, 11, 0.12);
+  --admin-danger: #EF4444;
+  --admin-danger-bg: rgba(239, 68, 68, 0.12);
+  --admin-info: #3B82F6;
+  --admin-info-bg: rgba(59, 130, 246, 0.12);
+
+  --admin-sidebar-width: 260px;
+  --admin-header-height: 70px;
+}
+
+/* Base resets inside admin scope */
+.admin-scope {
+  min-height: 100vh;
+  background-color: var(--admin-bg-base);
+  color: var(--admin-text-primary);
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+.admin-scope h1,
+.admin-scope h2,
+.admin-scope h3,
+.admin-scope h4 {
+  font-family: 'Playfair Display', serif;
+  color: var(--admin-cream);
+  letter-spacing: 0.5px;
+}
+
+/* Card Component */
+.admin-card {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+.admin-card:hover {
+  border-color: var(--admin-border-light);
+}
+
+.admin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-cream);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Buttons */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.admin-btn-primary {
+  background: linear-gradient(135deg, var(--admin-maroon), var(--admin-maroon-dark));
+  color: #FFFFFF;
+  border: 1px solid rgba(217, 174, 121, 0.3);
+  box-shadow: 0 2px 10px var(--admin-maroon-glow);
+}
+
+.admin-btn-primary:hover {
+  background: linear-gradient(135deg, #8B252E, var(--admin-maroon));
+  box-shadow: 0 4px 16px var(--admin-maroon-glow);
+  transform: translateY(-1px);
+}
+
+.admin-btn-gold {
+  background: var(--admin-gold);
+  color: #1A1414;
+  font-weight: 600;
+}
+
+.admin-btn-gold:hover {
+  background: var(--admin-gold-hover);
+  transform: translateY(-1px);
+}
+
+.admin-btn-secondary {
+  background: var(--admin-bg-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-btn-secondary:hover {
+  background: var(--admin-bg-card-hover);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-gold);
+}
+
+.admin-btn-danger {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.admin-btn-danger:hover {
+  background: var(--admin-danger);
+  color: #FFFFFF;
+}
+
+/* Badges */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-badge-success {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.admin-badge-warning {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.admin-badge-danger {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.admin-badge-gold {
+  background: rgba(217, 174, 121, 0.15);
+  color: var(--admin-gold);
+  border: 1px solid rgba(217, 174, 121, 0.4);
+}
+
+/* Forms */
+.admin-form-group {
+  margin-bottom: 20px;
+}
+
+.admin-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  margin-bottom: 8px;
+}
+
+.admin-input,
+.admin-select,
+.admin-textarea {
+  width: 100%;
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-primary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.admin-input:focus,
+.admin-select:focus,
+.admin-textarea:focus {
+  border-color: var(--admin-gold);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(217, 174, 121, 0.15);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+/* Data Tables */
+.admin-table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-table th {
+  background: var(--admin-bg-surface);
+  padding: 14px 18px;
+  color: var(--admin-gold);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table td {
+  padding: 14px 18px;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 13px;
+}
+
+.admin-table tr:hover td {
+  background: rgba(217, 174, 121, 0.03);
+  color: var(--admin-text-primary);
+}
+
+/* Alerts */
+.admin-alert {
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-alert-danger {
+  background: var(--admin-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #FCA5A5;
+}
+
+.admin-alert-success {
+  background: var(--admin-success-bg);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6EE7B7;
+}
+
+.admin-alert-warning {
+  background: var(--admin-warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #FCD34D;
+}

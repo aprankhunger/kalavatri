@@ -31,7 +31,7 @@ const Navbar = () => {
               <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
                 {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
               </button>
-              <Link to="/" className="navbar-brand">KALAVATRI.CO</Link>
+              <Link to="/" className="navbar-brand">KALAVATRI</Link>
             </div>
 
             <div className={`nav-links ${mobileOpen ? 'mobile-open' : ''}`}>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { FiInstagram, FiFacebook, FiTwitter } from 'react-icons/fi';
 import './Footer.css';
 
@@ -7,7 +8,7 @@ const Footer = () => {
       <div className="container">
         <div className="footer-top">
           <div className="footer-brand-col">
-            <div className="footer-brand">KALAVATRI.CO</div>
+            <div className="footer-brand">KALAVATRI</div>
             <p className="footer-desc">
               We have shoes that suits your style and which you're proud to wear. From women to men.
             </p>
@@ -33,8 +34,9 @@ const Footer = () => {
               <ul>
                 <li><a href="#">Customer Support</a></li>
                 <li><a href="#">Delivery Details</a></li>
-                <li><a href="#">Terms & Conditions</a></li>
-                <li><a href="#">Privacy Policy</a></li>
+                <li><Link to="/terms-and-conditions">Terms & Conditions</Link></li>
+                <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+                <li><Link to="/refund-policy">Refund & Cancellation</Link></li>
               </ul>
             </div>
             <div className="footer-col">
@@ -59,7 +61,7 @@ const Footer = () => {
         </div>
 
         <div className="footer-bottom">
-          <p>Kalavatri.co © 2024-2025, All Rights Reserved</p>
+          <p>Kalavatri © 2024-2026, All Rights Reserved</p>
           <div className="payment-badges">
             <span className="badge">VISA</span>
             <span className="badge">MC</span>
