@@ -3,6 +3,8 @@ import CustomerLayout from './components/CustomerLayout';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import OrderSuccess from './pages/OrderSuccess';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import RefundPolicy from './pages/RefundPolicy';
@@ -15,6 +17,9 @@ import AdminLayout from './admin/AdminLayout';
 import AdminLogin from './admin/pages/AdminLogin';
 import Dashboard from './admin/pages/Dashboard';
 import AuditLogs from './admin/pages/AuditLogs';
+import ProductsList from './admin/pages/ProductsList';
+import ProductForm from './admin/pages/ProductForm';
+import InventoryManager from './admin/pages/InventoryManager';
 
 import './App.css';
 
@@ -28,6 +33,8 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-success/:orderNumber" element={<OrderSuccess />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
@@ -43,6 +50,10 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route index element={<Navigate to={`${ADMIN_PATH}/dashboard`} replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="products" element={<ProductsList />} />
+              <Route path="products/new" element={<ProductForm />} />
+              <Route path="products/:id/edit" element={<ProductForm />} />
+              <Route path="inventory" element={<InventoryManager />} />
               <Route path="audit-logs" element={<AuditLogs />} />
               {/* Fallback for unbuilt module tabs in Phase 1 */}
               <Route

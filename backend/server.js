@@ -7,8 +7,11 @@ import dotenv from 'dotenv';
 
 import productRoutes from './routes/productRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
 import adminAuthRoutes from './routes/admin/adminAuthRoutes.js';
 import adminAuditRoutes from './routes/admin/adminAuditRoutes.js';
+import adminProductRoutes from './routes/admin/adminProductRoutes.js';
+import adminInventoryRoutes from './routes/admin/adminInventoryRoutes.js';
 import { seedSuperAdmin } from './seed/adminSeed.js';
 
 dotenv.config();
@@ -52,10 +55,13 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 // Public Routes
 app.use('/api/products', productRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Admin Routes (isolated namespace)
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin/audit-logs', adminAuditRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin/inventory', adminInventoryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

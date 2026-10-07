@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiSearch, FiShoppingCart, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { FiSearch, FiShoppingCart, FiMenu, FiX } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import './Navbar.css';
 
@@ -15,7 +15,7 @@ const Navbar = () => {
       {announcementVisible && (
         <div className="announcement-bar">
           <span>
-            Sign up and get 20% off to your first order. <a href="#">Sign Up Now</a>
+            Get 20% off your first order with code <strong>KALAVATRI20</strong> | Free Shipping across India
           </span>
           <button className="close-btn" onClick={() => setAnnouncementVisible(false)} aria-label="Close">
             <FiX />
@@ -52,7 +52,6 @@ const Navbar = () => {
                   <FiShoppingCart size={24} />
                   {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                 </Link>
-                <button aria-label="Account"><FiUser size={24} /></button>
               </div>
             </div>
           </nav>

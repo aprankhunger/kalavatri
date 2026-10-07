@@ -95,9 +95,9 @@ const Cart = () => {
                 <button className="btn btn-primary">Apply</button>
               </div>
               
-              <button className="btn btn-primary btn-full checkout-btn">
+              <Link to="/checkout" className="btn btn-primary btn-full checkout-btn">
                 Go to Checkout <FiArrowRight size={20} />
-              </button>
+              </Link>
             </div>
           </div>
         )}
