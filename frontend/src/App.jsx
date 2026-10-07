@@ -28,21 +28,6 @@ function App() {
     <AdminAuthProvider>
       <Router>
         <Routes>
-          {/* Public Customer Storefront Routes */}
-          <Route element={<CustomerLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/product/:slug" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-success/:orderNumber" element={<OrderSuccess />} />
-            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            {/* Decoy 404 for standard /admin so bots cannot detect portal */}
-            <Route path="/admin" element={<NotFound />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-
           {/* Secret Obfuscated Admin Portal Routes */}
           <Route path={`${ADMIN_PATH}/login`} element={<AdminLogin />} />
 
@@ -70,6 +55,21 @@ function App() {
                 }
               />
             </Route>
+          </Route>
+
+          {/* Public Customer Storefront Routes */}
+          <Route element={<CustomerLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/product/:slug" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-success/:orderNumber" element={<OrderSuccess />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            {/* Decoy 404 for standard /admin so bots cannot detect portal */}
+            <Route path="/admin" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </Router>
