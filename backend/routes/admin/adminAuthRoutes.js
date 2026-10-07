@@ -4,11 +4,27 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { generateSecret, verifySync, generateURI } from 'otplib';
 import QRCode from 'qrcode';
-import AdminUser, { ADMIN_ROLES, ROLE_PERMISSIONS } from '../../models/AdminUser.js';
-import { requireAdminAuth, ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME, getCookieOptions } from '../../middleware/adminAuth.js';
+import {
+  ADMIN_ROLES,
+  ROLE_PERMISSIONS,
+  findAdminUserByEmail,
+  findAdminUserById,
+  updateAdminUser,
+} from '../../db/adminUserDb.js';
+import {
+  requireAdminAuth,
+  ACCESS_COOKIE_NAME,
+  REFRESH_COOKIE_NAME,
+  getCookieOptions,
+} from '../../middleware/adminAuth.js';
 import { authRateLimiter } from '../../middleware/rateLimiter.js';
 import { validate } from '../../middleware/validate.js';
-import { loginSchema, verify2FASchema, setup2FAConfirmSchema, changePasswordSchema } from '../../validations/adminAuthSchemas.js';
+import {
+  loginSchema,
+  verify2FASchema,
+  setup2FAConfirmSchema,
+  changePasswordSchema,
+} from '../../validations/adminAuthSchemas.js';
 import { logAuditEvent } from '../../utils/auditLogger.js';
 
 const router = express.Router();
@@ -20,7 +36,7 @@ const TEMP_TOKEN_EXPIRY = '5m';
 // Helper to generate access & refresh tokens and set HttpOnly cookies
 const generateAuthCookiesAndResponse = (res, user) => {
   const payload = {
-    id: user._id.toString(),
+    id: user.id,
     email: user.email,
     role: user.role,
   };
@@ -57,7 +73,7 @@ router.post('/login', authRateLimiter, validate(loginSchema), async (req, res) =
     const { email, password } = req.body;
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
 
-    const user = await AdminUser.findOne({ email: email.toLowerCase(), isDeleted: false });
+    const user = await findAdminUserByEmail(email);
 
     if (!user) {
       await logAuditEvent({
@@ -125,15 +141,13 @@ router.post('/login', authRateLimiter, validate(loginSchema), async (req, res) =
     }
 
     // Two-factor authentication handling:
-    // Mandatory for super_admin or any user with 2FA enabled
     const isSuperAdmin = user.role === ADMIN_ROLES.SUPER_ADMIN;
     const mustUse2FA = isSuperAdmin || user.twoFactorEnabled;
 
     if (mustUse2FA) {
-      // If 2FA not configured yet for superadmin, prompt to setup 2FA
       if (!user.twoFactorEnabled || !user.twoFactorSecret) {
         const setupToken = jwt.sign(
-          { id: user._id.toString(), email: user.email, action: '2fa_setup' },
+          { id: user.id, email: user.email, action: '2fa_setup' },
           process.env.JWT_ACCESS_SECRET,
           { expiresIn: TEMP_TOKEN_EXPIRY }
         );
@@ -145,9 +159,8 @@ router.post('/login', authRateLimiter, validate(loginSchema), async (req, res) =
         });
       }
 
-      // 2FA is already configured, issue temporary 2FA verification token
       const verifyToken = jwt.sign(
-        { id: user._id.toString(), email: user.email, action: '2fa_verify' },
+        { id: user.id, email: user.email, action: '2fa_verify' },
         process.env.JWT_ACCESS_SECRET,
         { expiresIn: TEMP_TOKEN_EXPIRY }
       );
@@ -159,7 +172,7 @@ router.post('/login', authRateLimiter, validate(loginSchema), async (req, res) =
       });
     }
 
-    // Direct login for roles without 2FA required (non-superadmins before 2FA is enabled)
+    // Direct login for roles without 2FA
     await user.recordSuccessfulLogin(clientIp);
     const authData = generateAuthCookiesAndResponse(res, user);
 
@@ -197,26 +210,25 @@ router.post('/verify-2fa', authRateLimiter, validate(verify2FASchema), async (re
       });
     }
 
-    const user = await AdminUser.findById(decoded.id);
+    const user = await findAdminUserById(decoded.id);
     if (!user || user.isDeleted || !user.isActive) {
       return res.status(401).json({ error: 'Account not found or inactive' });
     }
 
-    // Check TOTP code against secret
     const isValidTotp = verifySync({ token: code.trim(), secret: user.twoFactorSecret })?.valid;
     let usedBackupCode = false;
 
     if (!isValidTotp) {
-      // Check backup codes
       const candidateCodeClean = code.trim().toUpperCase();
-      const backupCodeIdx = user.twoFactorBackupCodes.findIndex(
+      const backupCodes = user.twoFactorBackupCodes || [];
+      const backupCodeIdx = backupCodes.findIndex(
         (bc) => !bc.used && bcrypt.compareSync(candidateCodeClean, bc.codeHash)
       );
 
       if (backupCodeIdx !== -1) {
-        user.twoFactorBackupCodes[backupCodeIdx].used = true;
-        user.twoFactorBackupCodes[backupCodeIdx].usedAt = new Date();
-        await user.save();
+        backupCodes[backupCodeIdx].used = true;
+        backupCodes[backupCodeIdx].usedAt = new Date().toISOString();
+        await updateAdminUser(user.id, { two_factor_backup_codes: backupCodes });
         usedBackupCode = true;
       } else {
         await logAuditEvent({
@@ -259,7 +271,6 @@ router.post('/setup-2fa', async (req, res) => {
   try {
     let userId = null;
 
-    // Can be called either with tempToken (first-time login) or via authenticated session
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
@@ -274,18 +285,15 @@ router.post('/setup-2fa', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized', message: 'Valid session required to setup 2FA' });
     }
 
-    const user = await AdminUser.findById(userId);
+    const user = await findAdminUserById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Generate fresh secret
     const secret = generateSecret();
     const serviceName = 'KALAVATRI Admin';
     const otpAuthUrl = generateURI({ secret, label: user.email, issuer: serviceName });
     const qrCodeDataUrl = await QRCode.toDataURL(otpAuthUrl);
 
-    // Save temporary secret to user record
-    user.twoFactorSecret = secret;
-    await user.save();
+    await updateAdminUser(user.id, { two_factor_secret: secret });
 
     await logAuditEvent({
       req,
@@ -324,7 +332,7 @@ router.post('/confirm-2fa', validate(setup2FAConfirmSchema), async (req, res) =>
       return res.status(401).json({ error: 'Unauthorized', message: 'Valid session required' });
     }
 
-    const user = await AdminUser.findById(userId);
+    const user = await findAdminUserById(userId);
     if (!user || !user.twoFactorSecret) {
       return res.status(400).json({ error: '2FA setup was not initiated. Please call /setup-2fa first.' });
     }
@@ -342,25 +350,26 @@ router.post('/confirm-2fa', validate(setup2FAConfirmSchema), async (req, res) =>
     const hashedBackupCodes = [];
 
     for (let i = 0; i < 8; i++) {
-      const rawCode = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8-char hex
+      const rawCode = crypto.randomBytes(4).toString('hex').toUpperCase();
       plainBackupCodes.push(rawCode);
       const hash = bcrypt.hashSync(rawCode, 10);
       hashedBackupCodes.push({ codeHash: hash, used: false });
     }
 
-    user.twoFactorEnabled = true;
-    user.twoFactorBackupCodes = hashedBackupCodes;
-    await user.save();
+    const updatedUser = await updateAdminUser(user.id, {
+      two_factor_enabled: true,
+      two_factor_backup_codes: hashedBackupCodes,
+    });
 
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
-    await user.recordSuccessfulLogin(clientIp);
-    const authData = generateAuthCookiesAndResponse(res, user);
+    await updatedUser.recordSuccessfulLogin(clientIp);
+    const authData = generateAuthCookiesAndResponse(res, updatedUser);
 
     await logAuditEvent({
       req,
       action: '2FA_ACTIVATED',
       resource: 'AUTH',
-      adminUser: user,
+      adminUser: updatedUser,
     });
 
     return res.json({
@@ -396,13 +405,13 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    const user = await AdminUser.findById(decoded.id);
+    const user = await findAdminUserById(decoded.id);
     if (!user || user.isDeleted || !user.isActive) {
       return res.status(401).json({ error: 'Account inactive or deleted' });
     }
 
     const payload = {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
     };
@@ -470,8 +479,8 @@ router.post('/change-password', requireAdminAuth, validate(changePasswordSchema)
     }
 
     const salt = await bcrypt.genSalt(12);
-    user.passwordHash = await bcrypt.hash(newPassword, salt);
-    await user.save();
+    const newHash = await bcrypt.hash(newPassword, salt);
+    await updateAdminUser(user.id, { password_hash: newHash });
 
     await logAuditEvent({
       req,

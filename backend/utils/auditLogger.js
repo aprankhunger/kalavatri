@@ -1,4 +1,4 @@
-import AuditLog from '../models/AuditLog.js';
+import supabase from '../db/supabase.js';
 
 export const logAuditEvent = async ({
   req,
@@ -10,6 +10,8 @@ export const logAuditEvent = async ({
   actorEmail = null,
 }) => {
   try {
+    if (!supabase) return;
+
     const ipAddress =
       req?.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
       req?.socket?.remoteAddress ||
@@ -22,10 +24,6 @@ export const logAuditEvent = async ({
       req?.adminUser?.email ||
       actorEmail ||
       'system';
-    const role =
-      adminUser?.role ||
-      req?.adminUser?.role ||
-      'system';
 
     // Mask sensitive details (e.g. passwords, card numbers, secrets)
     const sanitizedDetails = { ...details };
@@ -33,21 +31,17 @@ export const logAuditEvent = async ({
     if (sanitizedDetails.token) sanitizedDetails.token = '[REDACTED]';
     if (sanitizedDetails.secret) sanitizedDetails.secret = '[REDACTED]';
 
-    const entry = new AuditLog({
-      adminUserId: userId,
-      adminEmail: email,
-      role,
+    await supabase.from('audit_logs').insert({
+      admin_user_id: userId,
+      actor_email: email,
       action,
       resource,
-      resourceId: resourceId ? String(resourceId) : null,
+      resource_id: resourceId ? String(resourceId) : null,
       details: sanitizedDetails,
-      ipAddress,
-      userAgent,
-      createdAt: new Date(),
+      ip_address: ipAddress,
+      user_agent: userAgent,
     });
-
-    await entry.save();
   } catch (err) {
-    console.error('⚠️ Failed to write audit log entry:', err.message);
+    console.error('⚠️ Failed to write audit log entry to Supabase:', err.message);
   }
 };

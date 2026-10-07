@@ -1,10 +1,10 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 
+import supabase from './db/supabase.js';
 import productRoutes from './routes/productRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -12,7 +12,7 @@ import adminAuthRoutes from './routes/admin/adminAuthRoutes.js';
 import adminAuditRoutes from './routes/admin/adminAuditRoutes.js';
 import adminProductRoutes from './routes/admin/adminProductRoutes.js';
 import adminInventoryRoutes from './routes/admin/adminInventoryRoutes.js';
-import { seedSuperAdmin } from './seed/adminSeed.js';
+import { seedSupabase } from './seed/supabaseSeed.js';
 
 dotenv.config();
 
@@ -30,7 +30,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-        connectSrc: ["'self'", FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5000'],
+        connectSrc: ["'self'", FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5000', 'https://api.postalpincode.in'],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -69,7 +69,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     message: 'Kalavatri API is running',
     timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    database: supabase ? 'supabase-connected' : 'unconfigured',
   });
 });
 
@@ -82,26 +82,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to MongoDB and start server
-mongoose.set('bufferCommands', false);
-mongoose
-  .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
-  .then(async () => {
-    console.log('✅ Connected to MongoDB');
-    try {
-      await seedSuperAdmin();
-    } catch (seedErr) {
-      console.warn('⚠️ Super Admin seeding note:', seedErr.message);
-    }
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT} (offline DB mode)`);
-    });
-  });
+// Server Initialization
+if (supabase) {
+  seedSupabase()
+    .then(() => console.log('✅ Supabase database initialized and seeded'))
+    .catch((err) => console.warn('⚠️ Supabase seed warning:', err.message));
+}
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT} (${supabase ? 'Supabase mode' : 'Offline fallback mode'})`);
+});
 
 export default app;

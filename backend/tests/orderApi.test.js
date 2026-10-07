@@ -1,9 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import mongoose from 'mongoose';
 import orderRoutes from '../routes/orderRoutes.js';
-import Order from '../models/Order.js';
 
 test('Order System & Pincode Auto-Detection Suite', async (t) => {
   const app = express();

@@ -24,7 +24,7 @@
 | **Shipping**     | Self-shipping (manual courier dispatch & AWB)       |
 | **Super Admin**  | kalavatri01@gmail.com                               |
 | **Hosting Target** | DigitalOcean (Droplet/App Platform) + GoDaddy DNS  |
-| **Database**     | MongoDB                                             |
+| **Database**     | Supabase (PostgreSQL)                               |
 
 ### Product Categories
 - **Bridal** — Heavy embellishment, zardozi-kundan work

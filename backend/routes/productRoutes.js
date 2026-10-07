@@ -1,65 +1,118 @@
 import express from 'express';
-import Product from '../models/Product.js';
+import supabase from '../db/supabase.js';
 import { seedProducts } from '../seed/seedData.js';
 
 const router = express.Router();
 
-// GET /api/products — Get all products (with optional filters)
+// Helper to format Supabase snake_case product to frontend camelCase
+export const formatProductResponse = (row) => {
+  if (!row) return null;
+  return {
+    _id: row.id,
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    sku: row.sku,
+    description: row.description,
+    price: Number(row.price),
+    originalPrice: row.original_price ? Number(row.original_price) : null,
+    discount: Number(row.discount || 0),
+    image: row.image,
+    images: row.images || [row.image],
+    category: row.category,
+    badge: row.badge || '',
+    status: row.status || 'published',
+    rating: Number(row.rating || 5.0),
+    reviewCount: row.review_count || 0,
+    sizes: row.sizes || [],
+    colors: row.colors || [],
+    stockQuantity: row.stock_quantity || 0,
+    lowStockThreshold: row.low_stock_threshold || 5,
+    inStock: row.in_stock !== false,
+    featured: row.featured || false,
+    variants: row.variants || [],
+    metaTitle: row.meta_title,
+    metaDescription: row.meta_description,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
+
+// Public: Helper to filter seed products safely (hide cost price and drafts)
+const getPublicSeedProducts = () => {
+  return seedProducts
+    .filter((p) => p.status === 'published' && !p.isDeleted)
+    .map(({ costPrice, ...publicData }) => publicData);
+};
+
+// GET /api/products — Get all active published products for customer storefront
 router.get('/', async (req, res) => {
   try {
-    const { category, badge, featured, sort } = req.query;
-    const filter = {};
-
-    if (category) filter.category = category;
-    if (badge) filter.badge = badge;
-    if (featured === 'true') filter.featured = true;
-
-    let query = Product.find(filter);
-
-    if (sort === 'price_asc') query = query.sort({ price: 1 });
-    else if (sort === 'price_desc') query = query.sort({ price: -1 });
-    else if (sort === 'rating') query = query.sort({ rating: -1 });
-    else query = query.sort({ createdAt: -1 });
-
-    const products = await query;
-
-    // If no products in DB, return seed data
-    if (products.length === 0) {
-      return res.json(seedProducts);
+    if (!supabase) {
+      return res.json(getPublicSeedProducts());
     }
 
-    res.json(products);
-  } catch (error) {
-    // Fallback to seed data if DB is unavailable
-    res.json(seedProducts);
+    const { category, badge, featured, sort } = req.query;
+
+    let query = supabase
+      .from('products')
+      .select('*')
+      .eq('is_deleted', false)
+      .eq('status', 'published');
+
+    if (category) query = query.eq('category', category);
+    if (badge) query = query.eq('badge', badge);
+    if (featured === 'true') query = query.eq('featured', true);
+
+    if (sort === 'price_asc') query = query.order('price', { ascending: true });
+    else if (sort === 'price_desc') query = query.order('price', { ascending: false });
+    else if (sort === 'rating') query = query.order('rating', { ascending: false });
+    else query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error || !data || data.length === 0) {
+      return res.json(getPublicSeedProducts());
+    }
+
+    const formatted = data.map(formatProductResponse);
+    return res.json(formatted);
+  } catch {
+    return res.json(getPublicSeedProducts());
   }
 });
 
-// GET /api/products/:slug — Get single product
+// GET /api/products/:slug — Get single product by slug (public)
 router.get('/:slug', async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug });
-    if (!product) {
-      const seedProduct = seedProducts.find((p) => p.slug === req.params.slug);
+    if (!supabase) {
+      const publicSeeds = getPublicSeedProducts();
+      const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
       if (seedProduct) return res.json(seedProduct);
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.json(product);
-  } catch (error) {
-    const seedProduct = seedProducts.find((p) => p.slug === req.params.slug);
-    if (seedProduct) return res.json(seedProduct);
-    res.status(500).json({ message: error.message });
-  }
-});
 
-// POST /api/products/seed — Seed the database
-router.post('/seed', async (req, res) => {
-  try {
-    await Product.deleteMany({});
-    const created = await Product.insertMany(seedProducts);
-    res.json({ message: `Seeded ${created.length} products` });
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('slug', req.params.slug)
+      .eq('is_deleted', false)
+      .eq('status', 'published')
+      .single();
+
+    if (error || !data) {
+      const publicSeeds = getPublicSeedProducts();
+      const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
+      if (seedProduct) return res.json(seedProduct);
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    return res.json(formatProductResponse(data));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const publicSeeds = getPublicSeedProducts();
+    const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
+    if (seedProduct) return res.json(seedProduct);
+    return res.status(500).json({ message: error.message });
   }
 });
 

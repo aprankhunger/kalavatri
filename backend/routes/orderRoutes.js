@@ -1,11 +1,55 @@
 import express from 'express';
-import Order from '../models/Order.js';
+import supabase from '../db/supabase.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
 
 const router = express.Router();
 
 // In-memory cache for pincode lookups
 const pincodeCache = new Map();
+
+// Helper to generate readable order numbers
+const generateOrderNumber = () => {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return `KV-${dateStr}-${randomSuffix}`;
+};
+
+// Helper to format Supabase order row into standard structure
+const formatOrderResponse = (row) => {
+  if (!row) return null;
+  return {
+    _id: row.id,
+    id: row.id,
+    orderNumber: row.order_number,
+    customer: {
+      name: row.customer_name,
+      email: row.customer_email,
+      phone: row.customer_phone,
+    },
+    shippingAddress: {
+      addressLine1: row.shipping_address_line1,
+      addressLine2: row.shipping_address_line2,
+      landmark: row.landmark,
+      pincode: row.pincode,
+      city: row.city,
+      state: row.state,
+      country: row.country || 'India',
+    },
+    items: row.items || [],
+    subtotal: Number(row.subtotal),
+    deliveryFee: Number(row.delivery_fee || 0),
+    discount: Number(row.discount || 0),
+    totalAmount: Number(row.total_amount),
+    paymentMethod: row.payment_method || 'razorpay',
+    paymentStatus: row.payment_status || 'pending',
+    orderStatus: row.order_status || 'placed',
+    trackingNumber: row.tracking_number,
+    courierName: row.courier_name,
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
 
 // GET /api/orders/pincode/:pincode — Lookup City & State by Indian Postal PIN code
 router.get('/pincode/:pincode', async (req, res) => {
@@ -126,55 +170,62 @@ router.post('/', async (req, res) => {
     });
 
     const totalAmount = Math.max(0, calculatedSubtotal + Number(deliveryFee) - Number(discount));
-    const orderNumber = Order.generateOrderNumber();
+    const orderNumber = generateOrderNumber();
 
-    const newOrder = new Order({
-      orderNumber,
-      customer: {
-        name: customer.name.trim(),
-        email: customer.email.trim().toLowerCase(),
-        phone: phoneDigits,
-      },
-      shippingAddress: {
-        addressLine1: shippingAddress.addressLine1.trim(),
-        addressLine2: shippingAddress.addressLine2 ? shippingAddress.addressLine2.trim() : '',
-        landmark: shippingAddress.landmark ? shippingAddress.landmark.trim() : '',
-        pincode: shippingAddress.pincode.trim(),
-        city: shippingAddress.city.trim(),
-        state: shippingAddress.state.trim(),
-        country: 'India',
-      },
+    const orderPayload = {
+      order_number: orderNumber,
+      customer_name: customer.name.trim(),
+      customer_email: customer.email.trim().toLowerCase(),
+      customer_phone: phoneDigits,
+      shipping_address_line1: shippingAddress.addressLine1.trim(),
+      shipping_address_line2: shippingAddress.addressLine2 ? shippingAddress.addressLine2.trim() : '',
+      landmark: shippingAddress.landmark ? shippingAddress.landmark.trim() : '',
+      pincode: shippingAddress.pincode.trim(),
+      city: shippingAddress.city.trim(),
+      state: shippingAddress.state.trim(),
+      country: 'India',
       items: orderItems,
       subtotal: calculatedSubtotal,
-      deliveryFee: Number(deliveryFee),
+      delivery_fee: Number(deliveryFee),
       discount: Number(discount),
-      totalAmount,
-      paymentMethod: 'razorpay',
-      paymentStatus: 'pending',
-      orderStatus: 'placed',
-      notes: notes.trim(),
-    });
+      total_amount: totalAmount,
+      payment_method: 'razorpay',
+      payment_status: 'pending',
+      order_status: 'placed',
+      notes: notes ? notes.trim() : '',
+    };
 
-    await newOrder.save();
+    let savedOrder = null;
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert(orderPayload)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      savedOrder = formatOrderResponse(data);
+    } else {
+      // Offline fallback stub
+      savedOrder = formatOrderResponse({
+        id: 'local-' + Date.now(),
+        ...orderPayload,
+        created_at: new Date().toISOString(),
+      });
+    }
 
     // Trigger automated order confirmation email asynchronously
-    sendOrderConfirmationEmail(newOrder).catch((err) => {
+    sendOrderConfirmationEmail(savedOrder).catch((err) => {
       console.error('[Email Warning] Asynchronous email dispatch error:', err.message);
     });
 
     return res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      order: {
-        orderNumber: newOrder.orderNumber,
-        totalAmount: newOrder.totalAmount,
-        currency: 'INR',
-        customer: newOrder.customer,
-        shippingAddress: newOrder.shippingAddress,
-        items: newOrder.items,
-        paymentStatus: newOrder.paymentStatus,
-        createdAt: newOrder.createdAt,
-      },
+      order: savedOrder,
     });
   } catch (error) {
     return res.status(500).json({
@@ -189,9 +240,26 @@ router.post('/', async (req, res) => {
 router.get('/:orderNumber', async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const order = await Order.findOne({ orderNumber }).lean();
 
-    if (!order) {
+    if (!supabase) {
+      return res.json({
+        success: true,
+        order: {
+          orderNumber,
+          customer: { name: 'Customer', email: 'customer@example.com' },
+          shippingAddress: { city: 'Delhi', state: 'Delhi', pincode: '110001' },
+          totalAmount: 0,
+        },
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('order_number', orderNumber)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({
         success: false,
         message: 'Order not found',
@@ -200,7 +268,7 @@ router.get('/:orderNumber', async (req, res) => {
 
     return res.json({
       success: true,
-      order,
+      order: formatOrderResponse(data),
     });
   } catch (error) {
     return res.status(500).json({

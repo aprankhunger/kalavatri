@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import AdminUser from '../models/AdminUser.js';
+import supabase from '../db/supabase.js';
 
 export const ACCESS_COOKIE_NAME = 'kv_admin_access';
 export const REFRESH_COOKIE_NAME = 'kv_admin_refresh';
@@ -49,9 +49,21 @@ export const requireAdminAuth = async (req, res, next) => {
       });
     }
 
-    // Verify user exists and is active
-    const user = await AdminUser.findById(decoded.id);
-    if (!user || user.isDeleted || !user.isActive) {
+    if (!supabase) {
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Database connection is not configured.',
+      });
+    }
+
+    // Verify user exists and is active in Supabase
+    const { data: userRow, error } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('id', decoded.id)
+      .single();
+
+    if (error || !userRow || userRow.is_deleted || !userRow.is_active) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Admin account not found or deactivated.',
@@ -59,14 +71,30 @@ export const requireAdminAuth = async (req, res, next) => {
       });
     }
 
-    // Verify 2FA has been completed for this session
-    if (decoded.requires2FA) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Two-factor authentication verification is required.',
-        code: '2FA_REQUIRED',
-      });
-    }
+    // Wrap row in helper object
+    const user = {
+      _id: userRow.id,
+      id: userRow.id,
+      name: userRow.name,
+      email: userRow.email,
+      role: userRow.role,
+      isActive: userRow.is_active,
+      isDeleted: userRow.is_deleted,
+      twoFactorEnabled: userRow.two_factor_enabled,
+      twoFactorSecret: userRow.two_factor_secret,
+      twoFactorBackupCodes: userRow.two_factor_backup_codes || [],
+      failedLoginAttempts: userRow.failed_login_attempts,
+      lockUntil: userRow.lock_until ? new Date(userRow.lock_until) : null,
+      toSafeObject() {
+        return {
+          id: userRow.id,
+          name: userRow.name,
+          email: userRow.email,
+          role: userRow.role,
+          twoFactorEnabled: userRow.two_factor_enabled,
+        };
+      },
+    };
 
     req.adminUser = user;
     next();

@@ -1,4 +1,4 @@
-import { ADMIN_ROLES, ROLE_PERMISSIONS } from '../models/AdminUser.js';
+import { ADMIN_ROLES, ROLE_PERMISSIONS } from '../db/adminUserDb.js';
 
 // Require one of the allowed roles
 export const requireRole = (allowedRoles = []) => {

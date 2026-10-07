@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
 import { generateSecret, generateSync, verifySync } from 'otplib';
-import { ADMIN_ROLES, ROLE_PERMISSIONS } from '../models/AdminUser.js';
+import { ADMIN_ROLES, ROLE_PERMISSIONS } from '../db/adminUserDb.js';
 import { changePasswordSchema, loginSchema } from '../validations/adminAuthSchemas.js';
 
 test('Security Requirement 4.1: Password hashing and verification', async () => {
