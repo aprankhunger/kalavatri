@@ -1,21 +1,18 @@
 import axios from 'axios';
+import { fallbackProducts, fallbackReviews } from './fallbackData';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-// Fallback data if backend is not available
-import { fallbackProducts, fallbackReviews } from './fallbackData';
-
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 5000,
+  timeout: 8000,
 });
 
 export const getProducts = async (params = {}) => {
   try {
     const { data } = await api.get('/products', { params });
-    return data;
+    return Array.isArray(data) ? data : data?.products || [];
   } catch {
-    console.log('Using fallback product data');
     return fallbackProducts;
   }
 };
@@ -34,12 +31,29 @@ export const getReviews = async () => {
     const { data } = await api.get('/reviews');
     return data;
   } catch {
-    console.log('Using fallback review data');
     return fallbackReviews;
   }
 };
 
+export const getStoreConfig = async () => {
+  const { data } = await api.get('/store/config');
+  return data;
+};
+
+export const validateCoupon = async ({ code, subtotal, email }) => {
+  try {
+    const { data } = await api.post('/store/coupons/validate', { code, subtotal, email });
+    return data;
+  } catch (err) {
+    return err.response?.data || { valid: false, message: 'Could not validate coupon. Please try again.' };
+  }
+};
+
 export const subscribeNewsletter = async (email) => {
-  // Simulate success for now
-  return { success: true, message: 'Subscribed!' };
+  try {
+    const { data } = await api.post('/store/newsletter', { email });
+    return data;
+  } catch (err) {
+    return err.response?.data || { success: false, message: 'Could not subscribe right now. Please try again.' };
+  }
 };

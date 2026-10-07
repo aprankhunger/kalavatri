@@ -12,6 +12,8 @@ import {
 } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import axios from 'axios';
+import { validateCoupon } from '../services/api';
+import { useStoreConfig, calculateDeliveryFee } from '../hooks/useStoreConfig';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -40,13 +42,22 @@ const Checkout = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [promoCode, setPromoCode] = useState('');
-  const [discountPercent, setDiscountPercent] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [promoMessage, setPromoMessage] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const { config } = useStoreConfig();
 
-  // Delivery fee & pricing
-  const deliveryFee = 0; // Free delivery across India
-  const discountAmount = Math.round((cartTotal * discountPercent) / 100);
+  const deliveryFee = calculateDeliveryFee(config.store, cartTotal);
+  const discountAmount = appliedCoupon ? Math.min(Number(appliedCoupon.discount) || 0, cartTotal) : 0;
   const grandTotal = Math.max(0, cartTotal + deliveryFee - discountAmount);
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      setAppliedCoupon(null);
+      setPromoMessage('Your cart changed — please re-apply your coupon.');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartTotal]);
 
   // Redirect if cart is empty and not submitting
   useEffect(() => {
@@ -132,16 +143,26 @@ const Checkout = () => {
   };
 
   // Promo code validation
-  const handleApplyPromo = (e) => {
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
     const cleanPromo = promoCode.trim().toUpperCase();
-    if (cleanPromo === 'KALAVATRI20' || cleanPromo === 'FIRST20') {
-      setDiscountPercent(20);
-      setPromoMessage('20% discount applied successfully!');
+    if (!cleanPromo || promoLoading) return;
+    setPromoLoading(true);
+    const result = await validateCoupon({ code: cleanPromo, subtotal: cartTotal, email: formData.email.trim() || undefined });
+    setPromoLoading(false);
+    if (result.valid) {
+      setAppliedCoupon(result);
+      setPromoMessage(result.message || `${cleanPromo} applied`);
     } else {
-      setDiscountPercent(0);
-      setPromoMessage('Invalid promo code');
+      setAppliedCoupon(null);
+      setPromoMessage(result.message || 'Invalid promo code');
     }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setPromoCode('');
+    setPromoMessage('');
   };
 
   // Form Validation
@@ -212,6 +233,8 @@ const Checkout = () => {
           state: formData.state,
         },
         items: cartItems.map((item) => ({
+          _id: item._id,
+          slug: item.slug,
           name: item.name,
           image: item.image,
           price: item.price,
@@ -219,8 +242,7 @@ const Checkout = () => {
           size: item.size,
           color: item.color,
         })),
-        deliveryFee,
-        discount: discountAmount,
+        couponCode: appliedCoupon?.code || '',
         notes: formData.notes,
       };
 
@@ -555,18 +577,27 @@ const Checkout = () => {
 
               {/* Promo Code Input */}
               <form onSubmit={handleApplyPromo} className="promo-box">
+                <label htmlFor="promo-code" className="sr-only">Promo code</label>
                 <input
+                  id="promo-code"
                   type="text"
-                  placeholder="Promo code (e.g. KALAVATRI20)"
+                  placeholder="Promo code"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
+                  disabled={!!appliedCoupon}
                 />
-                <button type="submit" className="btn btn-outline btn-sm">
-                  Apply
-                </button>
+                {appliedCoupon ? (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={removeCoupon}>
+                    Remove
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-outline btn-sm" disabled={promoLoading}>
+                    {promoLoading ? 'Checking…' : 'Apply'}
+                  </button>
+                )}
               </form>
               {promoMessage && (
-                <p className={`promo-status ${discountPercent > 0 ? 'success' : 'error'}`}>
+                <p className={`promo-status ${appliedCoupon ? 'success' : 'error'}`} role="status">
                   {promoMessage}
                 </p>
               )}
@@ -579,14 +610,18 @@ const Checkout = () => {
 
                 {discountAmount > 0 && (
                   <div className="breakdown-row discount-row">
-                    <span>Discount ({discountPercent}%)</span>
+                    <span>Discount ({appliedCoupon?.code})</span>
                     <span>-₹{discountAmount.toLocaleString()}</span>
                   </div>
                 )}
 
                 <div className="breakdown-row">
                   <span>Delivery Fee</span>
-                  <span className="free-shipping">FREE</span>
+                  {deliveryFee === 0 ? (
+                    <span className="free-shipping">FREE</span>
+                  ) : (
+                    <span>₹{deliveryFee.toLocaleString()}</span>
+                  )}
                 </div>
 
                 <div className="breakdown-divider"></div>

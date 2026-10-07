@@ -1,8 +1,41 @@
 import express from 'express';
 import supabase from '../db/supabase.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
+import { getSetting } from '../utils/storeSettings.js';
+import { evaluateCoupon, redeemCoupon } from '../utils/couponEngine.js';
+import { seedProducts } from '../seed/seedData.js';
 
 const router = express.Router();
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Returns a Map keyed by both id and slug → { key, id, slug, name, image, price }
+const loadCatalogue = async (items) => {
+  const catalogue = new Map();
+  const add = (p) => {
+    const entry = { key: String(p.id || p._id || p.slug), id: p.id || p._id, slug: p.slug, name: p.name, image: p.image, price: Number(p.price) };
+    catalogue.set(String(entry.id), entry);
+    if (entry.slug) catalogue.set(String(entry.slug), entry);
+  };
+
+  if (supabase) {
+    const ids = [...new Set(items.map((i) => String(i._id || i.id || '')).filter((id) => UUID_RE.test(id)))];
+    const slugs = [...new Set(items.map((i) => i.slug).filter(Boolean))];
+    if (ids.length) {
+      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted').in('id', ids);
+      (data || []).filter((p) => !p.is_deleted && p.status === 'published').forEach(add);
+    }
+    if (slugs.length) {
+      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted').in('slug', slugs);
+      (data || []).filter((p) => !p.is_deleted && p.status === 'published').forEach(add);
+    }
+    if (catalogue.size > 0) return catalogue;
+  }
+
+  // Storefront falls back to seed data when the DB has no products
+  seedProducts.filter((p) => (!p.status || p.status === 'published') && !p.isDeleted).forEach(add);
+  return catalogue;
+};
 
 // In-memory cache for pincode lookups
 const pincodeCache = new Map();
@@ -15,7 +48,7 @@ const generateOrderNumber = () => {
 };
 
 // Helper to format Supabase order row into standard structure
-const formatOrderResponse = (row) => {
+export const formatOrderResponse = (row) => {
   if (!row) return null;
   return {
     _id: row.id,
@@ -39,6 +72,7 @@ const formatOrderResponse = (row) => {
     subtotal: Number(row.subtotal),
     deliveryFee: Number(row.delivery_fee || 0),
     discount: Number(row.discount || 0),
+    couponCode: row.coupon_code || null,
     totalAmount: Number(row.total_amount),
     paymentMethod: row.payment_method || 'razorpay',
     paymentStatus: row.payment_status || 'pending',
@@ -115,7 +149,7 @@ router.get('/pincode/:pincode', async (req, res) => {
 // POST /api/orders — Create Guest Checkout Order
 router.post('/', async (req, res) => {
   try {
-    const { customer, shippingAddress, items, deliveryFee = 0, discount = 0, notes = '' } = req.body;
+    const { customer, shippingAddress, items, couponCode = '', notes = '' } = req.body;
 
     // Validate customer contact
     if (!customer?.name || !customer?.email || !customer?.phone) {
@@ -150,26 +184,69 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Calculate subtotal & total
-    let calculatedSubtotal = 0;
-    const orderItems = items.map((item) => {
-      const price = Number(item.price) || 0;
-      const quantity = Math.max(1, Number(item.quantity) || 1);
-      const subtotal = price * quantity;
-      calculatedSubtotal += subtotal;
+    if (items.length > 30) {
+      return res.status(400).json({ success: false, message: 'Too many items in a single order.' });
+    }
 
-      return {
-        name: item.name,
-        image: item.image,
-        price,
+    const storeRules = await getSetting('store');
+    const maxQty = Math.max(1, Number(storeRules.maxQuantityPerItem) || 10);
+
+    // Re-price every line from the catalogue — never trust client prices
+    const catalogue = await loadCatalogue(items);
+    const quantityByProduct = new Map();
+    let calculatedSubtotal = 0;
+    const orderItems = [];
+
+    for (const item of items) {
+      const product = catalogue.get(String(item._id || item.id)) || catalogue.get(String(item.slug));
+      if (!product) {
+        return res.status(400).json({ success: false, message: `"${item.name || 'An item'}" is no longer available.` });
+      }
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return res.status(400).json({ success: false, message: 'Invalid item quantity.' });
+      }
+      const aggregate = (quantityByProduct.get(product.key) || 0) + quantity;
+      if (aggregate > maxQty) {
+        return res.status(400).json({ success: false, message: `You can order at most ${maxQty} pairs of "${product.name}".` });
+      }
+      quantityByProduct.set(product.key, aggregate);
+
+      const lineTotal = product.price * quantity;
+      calculatedSubtotal += lineTotal;
+      orderItems.push({
+        productId: product.id,
+        slug: product.slug,
+        name: product.name,
+        image: product.image,
+        price: product.price,
         quantity,
         size: item.size || null,
         color: item.color || null,
-        subtotal,
-      };
-    });
+        subtotal: lineTotal,
+      });
+    }
 
-    const totalAmount = Math.max(0, calculatedSubtotal + Number(deliveryFee) - Number(discount));
+    const threshold = Number(storeRules.freeShippingThreshold) || 0;
+    const serverDeliveryFee =
+      threshold > 0 && calculatedSubtotal >= threshold ? 0 : Math.max(0, Number(storeRules.deliveryFee) || 0);
+
+    let serverDiscount = 0;
+    let appliedCoupon = null;
+    if (couponCode) {
+      const result = await evaluateCoupon(couponCode, calculatedSubtotal, customer.email);
+      if (!result.valid) {
+        return res.status(422).json({ success: false, message: result.message });
+      }
+      const redeemed = await redeemCoupon(result.code);
+      if (!redeemed) {
+        return res.status(422).json({ success: false, message: 'This coupon has just reached its usage limit.' });
+      }
+      serverDiscount = result.discount;
+      appliedCoupon = result.code;
+    }
+
+    const totalAmount = Math.max(0, calculatedSubtotal + serverDeliveryFee - serverDiscount);
     const orderNumber = generateOrderNumber();
 
     const orderPayload = {
@@ -186,8 +263,8 @@ router.post('/', async (req, res) => {
       country: 'India',
       items: orderItems,
       subtotal: calculatedSubtotal,
-      delivery_fee: Number(deliveryFee),
-      discount: Number(discount),
+      delivery_fee: serverDeliveryFee,
+      discount: serverDiscount,
       total_amount: totalAmount,
       payment_method: 'razorpay',
       payment_status: 'pending',
@@ -198,11 +275,15 @@ router.post('/', async (req, res) => {
     let savedOrder = null;
 
     if (supabase) {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('orders')
-        .insert(orderPayload)
+        .insert(appliedCoupon ? { ...orderPayload, coupon_code: appliedCoupon } : orderPayload)
         .select()
         .single();
+
+      if (error && appliedCoupon && /coupon_code/.test(error.message)) {
+        ({ data, error } = await supabase.from('orders').insert(orderPayload).select().single());
+      }
 
       if (error) {
         throw new Error(error.message);

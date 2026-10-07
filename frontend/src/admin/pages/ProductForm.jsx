@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import useAdminCategories from '../hooks/useAdminCategories';
 import {
   FiArrowLeft,
   FiSave,
@@ -45,6 +46,7 @@ const ProductForm = () => {
   const [slug, setSlug] = useState('');
   const [sku, setSku] = useState('');
   const [category, setCategory] = useState('festive');
+  const categories = useAdminCategories();
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
@@ -510,10 +512,12 @@ const ProductForm = () => {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="bridal">Bridal Collection</option>
-                <option value="festive">Festive Collection</option>
-                <option value="everyday">Everyday Chic</option>
-                <option value="designer">Designer Art</option>
+                {!categories.some((c) => c.slug === category) && category && (
+                  <option value={category}>{category}</option>
+                )}
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.name}</option>
+                ))}
               </select>
             </div>
 

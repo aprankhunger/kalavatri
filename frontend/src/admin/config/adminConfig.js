@@ -32,6 +32,12 @@ export const ADMIN_NAV_SECTIONS = [
         permission: 'products:read',
       },
       {
+        label: 'Categories',
+        path: `${ADMIN_PATH}/categories`,
+        icon: 'FiFolder',
+        permission: 'products:read',
+      },
+      {
         label: 'Live Inventory',
         path: `${ADMIN_PATH}/inventory`,
         icon: 'FiLayers',

@@ -190,8 +190,8 @@ const ProductDetail = () => {
             </div>
             
             {isAdded ? (
-              <Link to="/cart" className="btn btn-primary add-to-cart-btn" style={{ textAlign: 'center' }}>
-                View Cart
+              <Link to="/cart" className="btn add-to-cart-btn view-cart-btn" style={{ textAlign: 'center' }}>
+                View Cart →
               </Link>
             ) : (
               <button 

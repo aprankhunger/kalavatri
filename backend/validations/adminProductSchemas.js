@@ -10,7 +10,7 @@ export const productCreateSchema = z.object({
   costPrice: z.number().min(0).optional().default(0),
   image: z.string().min(1, 'Primary image is required'),
   images: z.array(z.string()).optional().default([]),
-  category: z.enum(['bridal', 'festive', 'everyday', 'designer']),
+  category: z.string().trim().min(1, 'Category is required').max(60),
   badge: z.enum(['new', 'bestseller', 'sale', '']).optional().default(''),
   status: z.enum(['published', 'draft']).optional().default('published'),
   sizes: z.array(z.number()).optional().default([5, 6, 7, 8, 9, 10]),

@@ -6,8 +6,9 @@ export const validate = (schema, source = 'body') => {
       req[source] = parsed; // Use parsed and stripped data
       next();
     } catch (error) {
-      if (error.errors) {
-        const issues = error.errors.map((err) => ({
+      const zodIssues = error.issues || error.errors;
+      if (zodIssues) {
+        const issues = zodIssues.map((err) => ({
           field: err.path.join('.'),
           message: err.message,
         }));
