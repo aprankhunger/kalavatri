@@ -264,3 +264,14 @@
   .quantity-selector { width: 100%; }
   .tab-btn { font-size: 16px; padding: 16px 0; }
 }
+.view-cart-btn {
+  background: var(--gold);
+  color: var(--text-dark);
+  border: 1px solid var(--gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: cartLabelIn 0.35s ease both;
+  transition: background-color 0.3s ease;
+}
+.view-cart-btn:hover { background: var(--white); }

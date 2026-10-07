@@ -1,0 +1,128 @@
+.shop-page {
+  padding: 24px 0 80px;
+}
+
+.shop-header {
+  margin: 24px 0 28px;
+  animation: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.shop-title {
+  font-family: var(--font-heading, inherit);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.shop-subtitle {
+  margin-top: 10px;
+  color: rgba(0, 0, 0, 0.6);
+  max-width: 60ch;
+  line-height: 1.6;
+}
+
+.shop-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+
+.chip:hover {
+  border-color: #000;
+  transform: translateY(-1px);
+}
+
+.chip.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.shop-toolbar-right {
+  display: flex;
+  gap: 10px;
+}
+
+.shop-toolbar-right select {
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #f0f0f0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #f0f0f0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.shop-count {
+  margin: 20px 0 16px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.shop-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 768px) {
+  .shop-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .shop-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.shop-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 16px;
+  text-align: center;
+  animation: reveal-up 0.5s ease both;
+}
+
+.shop-empty h2 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.shop-empty p {
+  color: rgba(0, 0, 0, 0.6);
+}

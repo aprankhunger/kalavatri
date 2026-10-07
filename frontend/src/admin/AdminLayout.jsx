@@ -15,6 +15,8 @@ import {
   FiX,
   FiCheckCircle,
   FiLayers,
+  FiFolder,
+  FiUserCheck,
 } from 'react-icons/fi';
 import { useAdminAuth } from './context/AdminAuthContext';
 import { ADMIN_PATH, ADMIN_NAV_SECTIONS, ADMIN_ROLE_LABELS } from './config/adminConfig';
@@ -25,6 +27,8 @@ const ICON_MAP = {
   FiGrid: <FiGrid size={18} />,
   FiPackage: <FiPackage size={18} />,
   FiLayers: <FiLayers size={18} />,
+  FiFolder: <FiFolder size={18} />,
+  FiUserCheck: <FiUserCheck size={18} />,
   FiShoppingBag: <FiShoppingBag size={18} />,
   FiUsers: <FiUsers size={18} />,
   FiTag: <FiTag size={18} />,

@@ -12,6 +12,14 @@ import adminAuthRoutes from './routes/admin/adminAuthRoutes.js';
 import adminAuditRoutes from './routes/admin/adminAuditRoutes.js';
 import adminProductRoutes from './routes/admin/adminProductRoutes.js';
 import adminInventoryRoutes from './routes/admin/adminInventoryRoutes.js';
+import adminOrderRoutes from './routes/admin/adminOrderRoutes.js';
+import adminCustomerRoutes from './routes/admin/adminCustomerRoutes.js';
+import adminCouponRoutes from './routes/admin/adminCouponRoutes.js';
+import adminCategoryRoutes from './routes/admin/adminCategoryRoutes.js';
+import adminContentRoutes from './routes/admin/adminContentRoutes.js';
+import adminStaffRoutes from './routes/admin/adminStaffRoutes.js';
+import adminSystemRoutes from './routes/admin/adminSystemRoutes.js';
+import storeRoutes from './routes/storeRoutes.js';
 import { seedSupabase } from './seed/supabaseSeed.js';
 
 dotenv.config();
@@ -62,6 +70,14 @@ app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
+app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/admin/customers', adminCustomerRoutes);
+app.use('/api/admin/coupons', adminCouponRoutes);
+app.use('/api/admin/categories', adminCategoryRoutes);
+app.use('/api/admin/content', adminContentRoutes);
+app.use('/api/admin/staff', adminStaffRoutes);
+app.use('/api/admin/system', adminSystemRoutes);
+app.use('/api/store', storeRoutes);
 
 // Health check & root route
 app.get(['/', '/api'], (req, res) => {

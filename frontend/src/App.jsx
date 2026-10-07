@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import CustomerLayout from './components/CustomerLayout';
 import Home from './pages/Home';
+import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -20,6 +21,13 @@ import AuditLogs from './admin/pages/AuditLogs';
 import ProductsList from './admin/pages/ProductsList';
 import ProductForm from './admin/pages/ProductForm';
 import InventoryManager from './admin/pages/InventoryManager';
+import OrdersManager from './admin/pages/OrdersManager';
+import CustomersList from './admin/pages/CustomersList';
+import CouponsManager from './admin/pages/CouponsManager';
+import CategoriesManager from './admin/pages/CategoriesManager';
+import ContentManager from './admin/pages/ContentManager';
+import StoreSettings from './admin/pages/StoreSettings';
+import StaffManager from './admin/pages/StaffManager';
 
 import './App.css';
 
@@ -38,28 +46,23 @@ function App() {
               <Route path="products" element={<ProductsList />} />
               <Route path="products/new" element={<ProductForm />} />
               <Route path="products/:id/edit" element={<ProductForm />} />
+              <Route path="categories" element={<CategoriesManager />} />
               <Route path="inventory" element={<InventoryManager />} />
+              <Route path="orders" element={<OrdersManager />} />
+              <Route path="customers" element={<CustomersList />} />
+              <Route path="coupons" element={<CouponsManager />} />
+              <Route path="content" element={<ContentManager />} />
+              <Route path="staff" element={<StaffManager />} />
+              <Route path="settings" element={<StoreSettings />} />
               <Route path="audit-logs" element={<AuditLogs />} />
-              {/* Fallback for unbuilt module tabs in Phase 1 */}
-              <Route
-                path="*"
-                element={
-                  <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ fontFamily: "'Playfair Display', serif", color: 'var(--admin-gold)' }}>
-                      Module Scheduled for Next Phase
-                    </h2>
-                    <p style={{ color: 'var(--admin-text-secondary)', marginTop: '8px' }}>
-                      This administrative module is scheduled for implementation in the next phase of the roadmap.
-                    </p>
-                  </div>
-                }
-              />
+              <Route path="*" element={<Navigate to={`${ADMIN_PATH}/dashboard`} replace />} />
             </Route>
           </Route>
 
           {/* Public Customer Storefront Routes */}
           <Route element={<CustomerLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />

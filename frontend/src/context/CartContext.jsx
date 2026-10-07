@@ -59,10 +59,12 @@ export const CartProvider = ({ children }) => {
 
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
+  const isInCart = (productId) => cartItems.some((item) => item._id === productId);
 
   return (
     <CartContext.Provider value={{
       cartItems,
+      isInCart,
       addToCart,
       updateQuantity,
       removeFromCart,

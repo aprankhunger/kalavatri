@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import useAdminCategories from '../hooks/useAdminCategories';
 import {
   FiPlus,
   FiDownload,
@@ -31,6 +32,7 @@ const ProductsList = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const categories = useAdminCategories();
   const [statusFilter, setStatusFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
@@ -188,10 +190,9 @@ const ProductsList = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
               <option value="">All Categories</option>
-              <option value="bridal">Bridal Collection</option>
-              <option value="festive">Festive Collection</option>
-              <option value="everyday">Everyday Chic</option>
-              <option value="designer">Designer Art</option>
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
             </select>
           </div>
 
