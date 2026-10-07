@@ -63,7 +63,15 @@ app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
 
-// Health check
+// Health check & root route
+app.get(['/', '/api'], (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'kalavatri-backend',
+    database: supabase ? 'connected' : 'unconfigured',
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
