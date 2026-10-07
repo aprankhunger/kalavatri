@@ -1,0 +1,249 @@
+.admin-products-page {
+  animation: adminFadeIn 0.3s ease;
+}
+
+.admin-products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-page-title {
+  font-size: 26px;
+  margin: 0 0 6px;
+  color: var(--admin-cream);
+}
+
+.admin-page-subtitle {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Filter Card */
+.admin-filter-card {
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.admin-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.admin-search-box {
+  flex: 1 1 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--admin-text-muted);
+}
+
+.admin-search-input {
+  padding-left: 40px !important;
+}
+
+.admin-select-wrapper {
+  width: 170px;
+}
+
+/* Bulk Toolbar */
+.admin-bulk-toolbar {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  animation: adminFadeIn 0.2s ease;
+}
+
+.admin-bulk-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-gold);
+}
+
+.admin-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Table Specifics */
+.admin-checkbox-btn {
+  background: none;
+  border: none;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.admin-checkbox-btn:hover {
+  color: var(--admin-gold);
+}
+
+.admin-row-selected td {
+  background: rgba(217, 174, 121, 0.06) !important;
+}
+
+.admin-product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #000;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-product-meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-product-name-link {
+  color: var(--admin-cream);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.admin-product-name-link:hover {
+  color: var(--admin-gold);
+}
+
+.admin-product-sku-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-sku-pill {
+  font-family: monospace;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--admin-gold);
+}
+
+.admin-slug-text {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+/* Stock Indicator */
+.admin-stock-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-stock-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.stock-ok {
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.stock-low {
+  background: #F59E0B;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.stock-out {
+  background: #EF4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.admin-stock-sub {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.admin-stock-sub.low {
+  color: #F59E0B;
+}
+
+.admin-stock-sub.out {
+  color: #EF4444;
+}
+
+/* Actions Cell */
+.admin-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-action-icon-btn {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-secondary);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.admin-action-icon-btn:hover {
+  background: var(--admin-bg-card-hover);
+  color: var(--admin-gold);
+  border-color: var(--admin-gold);
+}
+
+.admin-action-icon-btn.delete:hover {
+  background: var(--admin-danger-bg);
+  color: #EF4444;
+  border-color: #EF4444;
+}
+
+/* Table Footer */
+.admin-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid var(--admin-border);
+  font-size: 13px;
+  color: var(--admin-text-muted);
+}

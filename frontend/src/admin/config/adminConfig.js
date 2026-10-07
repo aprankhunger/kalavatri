@@ -26,9 +26,15 @@ export const ADMIN_NAV_SECTIONS = [
     title: 'Store Operations',
     items: [
       {
-        label: 'Products & Stock',
+        label: 'Products Catalog',
         path: `${ADMIN_PATH}/products`,
         icon: 'FiPackage',
+        permission: 'products:read',
+      },
+      {
+        label: 'Live Inventory',
+        path: `${ADMIN_PATH}/inventory`,
+        icon: 'FiLayers',
         permission: 'products:read',
       },
       {

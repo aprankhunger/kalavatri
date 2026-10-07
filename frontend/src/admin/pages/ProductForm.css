@@ -1,0 +1,44 @@
+.admin-product-form-page {
+  animation: adminFadeIn 0.3s ease;
+}
+
+.admin-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-form-section {
+  margin-bottom: 24px;
+}
+
+.admin-image-preview-box {
+  margin-top: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  background: #000;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-main-preview-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+}
