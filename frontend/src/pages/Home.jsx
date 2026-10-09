@@ -8,6 +8,8 @@ import { getProducts, getReviews } from '../services/api';
 import { useStoreConfig } from '../hooks/useStoreConfig';
 import './Home.css';
 
+const CRAFTS = ['ZARDOZI', 'KUNDAN', 'MIRROR WORK', 'PHULKARI', 'THREAD ART', 'GOTA PATTI'];
+
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -80,11 +82,12 @@ const Home = () => {
         <div className="brand-strip-track">
           {[0, 1].map((dup) => (
             <div key={dup} className="brand-strip-inner">
-              <span>ZARDOZI</span>
-              <span>KUNDAN</span>
-              <span>MIRROR WORK</span>
-              <span>PHULKARI</span>
-              <span>THREAD ART</span>
+              {CRAFTS.map((craft) => (
+                <span key={craft} className="brand-strip-item">
+                  {craft}
+                  <span className="brand-strip-sep">✦</span>
+                </span>
+              ))}
             </div>
           ))}
         </div>
