@@ -107,7 +107,11 @@ app.use((err, req, res, next) => {
 });
 
 // Server Initialization
-if (supabase) {
+// Seeding is a one-off provisioning step, not something to run on every
+// serverless cold start. Run it automatically only outside Vercel (local dev),
+// or on demand via `node seed/supabaseSeed.js` / SEED_ON_START=true.
+const shouldAutoSeed = supabase && (!process.env.VERCEL || process.env.SEED_ON_START === 'true');
+if (shouldAutoSeed) {
   seedSupabase()
     .then(() => console.log('✅ Supabase database initialized and seeded'))
     .catch((err) => console.warn('⚠️ Supabase seed warning:', err.message));

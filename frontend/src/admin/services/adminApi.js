@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Honor the same configurable API origin as the storefront client so the admin
+// panel works when the backend is served from a different origin than the SPA.
+// VITE_API_URL should point at the API root (e.g. https://api.example.com/api);
+// defaults to the same-origin '/api' handled by the dev proxy / rewrites.
+const API_ROOT = import.meta.env.VITE_API_URL || '/api';
+const ADMIN_BASE = `${API_ROOT}/admin`;
+
 const adminApi = axios.create({
-  baseURL: '/api/admin',
+  baseURL: ADMIN_BASE,
   withCredentials: true, // Send and receive HttpOnly cookies
   headers: {
     'Content-Type': 'application/json',
@@ -13,7 +20,7 @@ const adminApi = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -48,11 +55,11 @@ adminApi.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post('/api/admin/auth/refresh', {}, { withCredentials: true });
+        await axios.post(`${ADMIN_BASE}/auth/refresh`, {}, { withCredentials: true });
         processQueue(null);
         return adminApi(originalRequest);
       } catch (refreshErr) {
-        processQueue(refreshErr, null);
+        processQueue(refreshErr);
         window.dispatchEvent(new CustomEvent('admin:session-expired'));
         return Promise.reject(refreshErr);
       } finally {

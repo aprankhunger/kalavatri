@@ -13,40 +13,51 @@ export const seedSupabase = async () => {
 
   console.log('--- Starting Supabase Database Seeding ---');
 
-  // 1. Seed Super Admin
-  const adminEmail = (process.env.SUPERADMIN_EMAIL || 'kalavatri01@gmail.com').toLowerCase();
-  const rawPassword = process.env.SUPERADMIN_INITIAL_PASSWORD || 'Kalavatri#Admin2026!';
+  // 1. Seed Super Admin — credentials MUST come from the environment.
+  // (Never ship a hardcoded/default password: anyone reading the repo would
+  // own the admin account on any deploy that forgot to override it.)
+  const adminEmail = (process.env.SUPERADMIN_EMAIL || '').toLowerCase().trim();
+  const rawPassword = process.env.SUPERADMIN_INITIAL_PASSWORD || '';
 
-  const { data: existingAdmin, error: checkAdminErr } = await supabase
-    .from('admin_users')
-    .select('id, email')
-    .eq('email', adminEmail)
-    .single();
-
-  if (checkAdminErr && checkAdminErr.code !== 'PGRST116') {
-    console.error('Error checking existing admin:', checkAdminErr.message);
-  }
-
-  if (!existingAdmin) {
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(rawPassword, salt);
-
-    const { error: insertAdminErr } = await supabase.from('admin_users').insert({
-      name: 'Super Admin',
-      email: adminEmail,
-      password_hash: passwordHash,
-      role: 'super_admin',
-      is_active: true,
-      two_factor_enabled: false,
-    });
-
-    if (insertAdminErr) {
-      console.error('Failed to create super admin in Supabase:', insertAdminErr.message);
-    } else {
-      console.log(`[Seed] Super Admin created: ${adminEmail}`);
-    }
+  if (!adminEmail || !rawPassword) {
+    console.warn(
+      '[Seed] SUPERADMIN_EMAIL / SUPERADMIN_INITIAL_PASSWORD not set — skipping super-admin creation. ' +
+        'Set both in the environment to seed the initial admin.'
+    );
+  } else if (rawPassword.length < 12) {
+    console.error('[Seed] SUPERADMIN_INITIAL_PASSWORD must be at least 12 characters — skipping super-admin creation.');
   } else {
-    console.log(`[Seed] Super Admin already exists: ${adminEmail}`);
+    const { data: existingAdmin, error: checkAdminErr } = await supabase
+      .from('admin_users')
+      .select('id, email')
+      .eq('email', adminEmail)
+      .single();
+
+    if (checkAdminErr && checkAdminErr.code !== 'PGRST116') {
+      console.error('Error checking existing admin:', checkAdminErr.message);
+    }
+
+    if (!existingAdmin) {
+      const salt = await bcrypt.genSalt(12);
+      const passwordHash = await bcrypt.hash(rawPassword, salt);
+
+      const { error: insertAdminErr } = await supabase.from('admin_users').insert({
+        name: 'Super Admin',
+        email: adminEmail,
+        password_hash: passwordHash,
+        role: 'super_admin',
+        is_active: true,
+        two_factor_enabled: false,
+      });
+
+      if (insertAdminErr) {
+        console.error('Failed to create super admin in Supabase:', insertAdminErr.message);
+      } else {
+        console.log(`[Seed] Super Admin created: ${adminEmail}`);
+      }
+    } else {
+      console.log(`[Seed] Super Admin already exists: ${adminEmail}`);
+    }
   }
 
   // 2. Seed Products

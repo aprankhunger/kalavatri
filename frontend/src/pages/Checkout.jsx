@@ -11,10 +11,28 @@ import {
   FiLoader
 } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
-import axios from 'axios';
-import { validateCoupon } from '../services/api';
+import { validateCoupon, createOrder, verifyPayment, cancelOrder, lookupPincode } from '../services/api';
 import { useStoreConfig, calculateDeliveryFee } from '../hooks/useStoreConfig';
 import './Checkout.css';
+
+const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
+
+// Load the Razorpay checkout script once, on demand.
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const existing = document.querySelector(`script[src="${RAZORPAY_SCRIPT}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      existing.addEventListener('error', () => resolve(false));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = RAZORPAY_SCRIPT;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -40,6 +58,7 @@ const Checkout = () => {
   const [pincodeMessage, setPincodeMessage] = useState('');
   const [pincodeError, setPincodeError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [errors, setErrors] = useState({});
   const [promoCode, setPromoCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -58,13 +77,6 @@ const Checkout = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartTotal]);
-
-  // Redirect if cart is empty and not submitting
-  useEffect(() => {
-    if (cartItems.length === 0 && !submitting) {
-      // Empty cart redirect back to cart
-    }
-  }, [cartItems, submitting]);
 
   // Handle Form Change
   const handleChange = (e) => {
@@ -100,16 +112,16 @@ const Checkout = () => {
     setPincodeMessage('');
 
     try {
-      // First try our backend proxy endpoint
-      const response = await axios.get(`/api/orders/pincode/${pin}`, { timeout: 4500 });
-      if (response.data?.success && response.data?.city && response.data?.state) {
+      // First try our backend proxy endpoint (same configurable API origin)
+      const data = await lookupPincode(pin);
+      if (data?.success && data?.city && data?.state) {
         setFormData((prev) => ({
           ...prev,
-          city: response.data.city,
-          state: response.data.state,
+          city: data.city,
+          state: data.state,
         }));
         setPincodeDetected(true);
-        setPincodeMessage(`📍 Auto-detected: ${response.data.city}, ${response.data.state}`);
+        setPincodeMessage(`📍 Auto-detected: ${data.city}, ${data.state}`);
         setPincodeLoading(false);
         return;
       }
@@ -200,17 +212,67 @@ const Checkout = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Open the Razorpay checkout for a created (reserved) order.
+  const openRazorpay = (order, razorpay) => {
+    const options = {
+      key: razorpay.keyId,
+      amount: razorpay.amount,
+      currency: razorpay.currency || 'INR',
+      name: 'Kalavatri',
+      description: `Order ${order.orderNumber}`,
+      order_id: razorpay.orderId,
+      prefill: { name: formData.name, email: formData.email, contact: formData.phone },
+      notes: { orderNumber: order.orderNumber },
+      theme: { color: '#8B2635' },
+      handler: async (response) => {
+        try {
+          const result = await verifyPayment({
+            orderNumber: order.orderNumber,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          if (result?.success) {
+            clearCart();
+            navigate(`/order-success/${order.orderNumber}`);
+          } else {
+            setSubmitError(result?.message || 'Payment could not be verified. If you were charged, contact support with your order number.');
+            setSubmitting(false);
+          }
+        } catch (err) {
+          setSubmitError(err.response?.data?.message || 'Payment verification failed. If you were charged, please contact support with your order number.');
+          setSubmitting(false);
+        }
+      },
+      modal: {
+        ondismiss: async () => {
+          await cancelOrder(order.orderNumber, razorpay.orderId).catch(() => {});
+          setSubmitError('Payment was cancelled, so your order was not placed. Your cart is intact.');
+          setSubmitting(false);
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', async () => {
+      await cancelOrder(order.orderNumber, razorpay.orderId).catch(() => {});
+      setSubmitError('Your payment did not go through. Please try again.');
+      setSubmitting(false);
+    });
+    rzp.open();
+  };
+
   // Handle Order Placement
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    setSubmitError('');
 
     if (cartItems.length === 0) {
-      alert('Your cart is empty.');
+      setSubmitError('Your cart is empty.');
       return;
     }
 
     if (!validateForm()) {
-      // Scroll to top of form
       window.scrollTo({ top: 100, behavior: 'smooth' });
       return;
     }
@@ -246,16 +308,31 @@ const Checkout = () => {
         notes: formData.notes,
       };
 
-      const res = await axios.post('/api/orders', payload);
-
-      if (res.data?.success && res.data?.order?.orderNumber) {
-        clearCart();
-        navigate(`/order-success/${res.data.order.orderNumber}`);
-      } else {
-        throw new Error(res.data?.message || 'Failed to place order');
+      const res = await createOrder(payload);
+      if (!res?.success || !res?.order?.orderNumber) {
+        throw new Error(res?.message || 'Failed to place order');
       }
+
+      const { order, razorpay } = res;
+
+      // No online gateway (dev / zero-amount already paid) → straight to success.
+      if (!razorpay?.orderId) {
+        clearCart();
+        navigate(`/order-success/${order.orderNumber}`);
+        return;
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        await cancelOrder(order.orderNumber, razorpay.orderId).catch(() => {});
+        setSubmitError('Could not load the secure payment window. Please check your connection and try again.');
+        setSubmitting(false);
+        return;
+      }
+
+      openRazorpay(order, razorpay);
     } catch (err) {
-      alert(err.response?.data?.message || err.message || 'Something went wrong while placing your order. Please try again.');
+      setSubmitError(err.response?.data?.message || err.message || 'Something went wrong while placing your order. Please try again.');
       setSubmitting(false);
     }
   };
@@ -382,19 +459,19 @@ const Checkout = () => {
                       className={errors.pincode ? 'input-error' : ''}
                     />
                     {pincodeLoading && (
-                      <span className="pincode-indicator loading">
-                        <FiLoader className="spin" /> Detecting...
+                      <span className="pincode-indicator loading" role="status" aria-live="polite">
+                        <FiLoader className="spin" aria-hidden="true" /> Detecting...
                       </span>
                     )}
                     {pincodeDetected && !pincodeLoading && (
                       <span className="pincode-indicator success">
-                        <FiCheckCircle /> Verified
+                        <FiCheckCircle aria-hidden="true" /> Verified
                       </span>
                     )}
                   </div>
 
-                  {pincodeMessage && <div className="pincode-auto-pill">{pincodeMessage}</div>}
-                  {pincodeError && <div className="pincode-warn-pill"><FiAlertCircle /> {pincodeError}</div>}
+                  {pincodeMessage && <div className="pincode-auto-pill" role="status" aria-live="polite">{pincodeMessage}</div>}
+                  {pincodeError && <div className="pincode-warn-pill" role="status" aria-live="polite"><FiAlertCircle aria-hidden="true" /> {pincodeError}</div>}
                   {errors.pincode && <span className="field-error">{errors.pincode}</span>}
                 </div>
 
@@ -530,14 +607,20 @@ const Checkout = () => {
 
               {/* Mobile Submit Button (sticky/bottom) */}
               <div className="form-submit-block">
+                {submitError && (
+                  <div className="checkout-error-banner" role="alert">
+                    <FiAlertCircle aria-hidden="true" /> {submitError}
+                  </div>
+                )}
                 <button
                   type="submit"
                   className="btn btn-primary btn-full submit-order-btn"
                   disabled={submitting}
+                  aria-busy={submitting}
                 >
                   {submitting ? (
                     <>
-                      <FiLoader className="spin" /> Processing Order...
+                      <FiLoader className="spin" aria-hidden="true" /> Processing Order...
                     </>
                   ) : (
                     `Place Order & Pay ₹${grandTotal.toLocaleString()}`

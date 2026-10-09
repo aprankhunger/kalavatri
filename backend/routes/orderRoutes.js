@@ -1,5 +1,7 @@
 import express from 'express';
+import crypto from 'crypto';
 import supabase from '../db/supabase.js';
+import razorpay, { razorpayKeyId } from '../utils/razorpay.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
 import { getSetting } from '../utils/storeSettings.js';
 import { evaluateCoupon, redeemCoupon } from '../utils/couponEngine.js';
@@ -13,7 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const loadCatalogue = async (items) => {
   const catalogue = new Map();
   const add = (p) => {
-    const entry = { key: String(p.id || p._id || p.slug), id: p.id || p._id, slug: p.slug, name: p.name, image: p.image, price: Number(p.price) };
+    const entry = { key: String(p.id || p._id || p.slug), id: p.id || p._id, slug: p.slug, name: p.name, image: p.image, price: Number(p.price), stock: p.stock_quantity != null ? Number(p.stock_quantity) : null };
     catalogue.set(String(entry.id), entry);
     if (entry.slug) catalogue.set(String(entry.slug), entry);
   };
@@ -22,17 +24,19 @@ const loadCatalogue = async (items) => {
     const ids = [...new Set(items.map((i) => String(i._id || i.id || '')).filter((id) => UUID_RE.test(id)))];
     const slugs = [...new Set(items.map((i) => i.slug).filter(Boolean))];
     if (ids.length) {
-      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted').in('id', ids);
+      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted, stock_quantity').in('id', ids);
       (data || []).filter((p) => !p.is_deleted && p.status === 'published').forEach(add);
     }
     if (slugs.length) {
-      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted').in('slug', slugs);
+      const { data } = await supabase.from('products').select('id, slug, name, image, price, status, is_deleted, stock_quantity').in('slug', slugs);
       (data || []).filter((p) => !p.is_deleted && p.status === 'published').forEach(add);
     }
-    if (catalogue.size > 0) return catalogue;
+    // When a DB is configured we return exactly what it holds — never mix in
+    // demo/seed products (they aren't real inventory and must not be orderable).
+    return catalogue;
   }
 
-  // Storefront falls back to seed data when the DB has no products
+  // Dev-only: no database configured → fall back to the bundled seed catalogue
   seedProducts.filter((p) => (!p.status || p.status === 'published') && !p.isDeleted).forEach(add);
   return catalogue;
 };
@@ -83,6 +87,41 @@ export const formatOrderResponse = (row) => {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+};
+
+// Marks a (previously reserved) order as paid, redeems its coupon, and fires
+// the confirmation email. Shared by the zero-amount path and payment verify.
+const finalizePaidOrder = async (orderRow, { method = 'razorpay', paymentId = null, signature = null } = {}) => {
+  if (!supabase) return formatOrderResponse(orderRow);
+
+  const wasCancelled = orderRow.order_status === 'cancelled';
+  if (wasCancelled) {
+    // Rare: order was released then still paid. Honor the payment and flag it.
+    console.warn(`[Orders] Order ${orderRow.order_number} was cancelled but paid — stock may need reconciliation.`);
+  }
+
+  const updates = {
+    payment_status: 'paid',
+    payment_method: method,
+    order_status: wasCancelled ? 'placed' : orderRow.order_status || 'placed',
+  };
+  if (paymentId) updates.razorpay_payment_id = paymentId;
+  if (signature) updates.razorpay_signature = signature;
+
+  const { data: updated } = await supabase.from('orders').update(updates).eq('id', orderRow.id).select().single();
+  const finalRow = updated || { ...orderRow, ...updates };
+
+  // Redeem the coupon now (deferred from order creation). Non-fatal on failure.
+  if (finalRow.coupon_code) {
+    const ok = await redeemCoupon(finalRow.coupon_code);
+    if (!ok) console.warn(`[Orders] Coupon ${finalRow.coupon_code} could not be redeemed at payment time.`);
+  }
+
+  const formatted = formatOrderResponse(finalRow);
+  sendOrderConfirmationEmail(formatted).catch((err) => {
+    console.error('[Email Warning] Asynchronous email dispatch error:', err.message);
+  });
+  return formatted;
 };
 
 // GET /api/orders/pincode/:pincode — Lookup City & State by Indian Postal PIN code
@@ -231,16 +270,15 @@ router.post('/', async (req, res) => {
     const serverDeliveryFee =
       threshold > 0 && calculatedSubtotal >= threshold ? 0 : Math.max(0, Number(storeRules.deliveryFee) || 0);
 
+    // Validate coupon and compute the discount server-side. Redemption is
+    // DEFERRED to successful payment (see finalizePaidOrder) so an abandoned
+    // or failed checkout never burns a coupon's usage count.
     let serverDiscount = 0;
     let appliedCoupon = null;
     if (couponCode) {
       const result = await evaluateCoupon(couponCode, calculatedSubtotal, customer.email);
       if (!result.valid) {
         return res.status(422).json({ success: false, message: result.message });
-      }
-      const redeemed = await redeemCoupon(result.code);
-      if (!redeemed) {
-        return res.status(422).json({ success: false, message: 'This coupon has just reached its usage limit.' });
       }
       serverDiscount = result.discount;
       appliedCoupon = result.code;
@@ -272,42 +310,90 @@ router.post('/', async (req, res) => {
       notes: notes ? notes.trim() : '',
     };
 
-    let savedOrder = null;
-
-    if (supabase) {
-      let { data, error } = await supabase
-        .from('orders')
-        .insert(appliedCoupon ? { ...orderPayload, coupon_code: appliedCoupon } : orderPayload)
-        .select()
-        .single();
-
-      if (error && appliedCoupon && /coupon_code/.test(error.message)) {
-        ({ data, error } = await supabase.from('orders').insert(orderPayload).select().single());
-      }
-
-      if (error) {
-        throw new Error(error.message);
-      }
-      savedOrder = formatOrderResponse(data);
-    } else {
-      // Offline fallback stub
-      savedOrder = formatOrderResponse({
+    // Offline/dev fallback: no DB → return a local stub (no real payment).
+    if (!supabase) {
+      const savedOrder = formatOrderResponse({
         id: 'local-' + Date.now(),
         ...orderPayload,
+        payment_status: 'paid',
         created_at: new Date().toISOString(),
+      });
+      return res.status(201).json({ success: true, message: 'Order created (offline mode)', order: savedOrder, razorpay: null });
+    }
+
+    // 1. Reserve stock atomically BEFORE taking payment — never collect money
+    //    for an item we can't fulfil. A shortage on any line rolls back all.
+    const { error: reserveError } = await supabase.rpc('reserve_order_stock', {
+      p_items: orderItems,
+      p_order_ref: orderNumber,
+    });
+    if (reserveError) {
+      const msg = reserveError.message || '';
+      if (/INSUFFICIENT_STOCK:/.test(msg)) {
+        const name = msg.split('INSUFFICIENT_STOCK:')[1]?.trim() || 'an item';
+        return res.status(409).json({ success: false, message: `Sorry, "${name}" doesn't have enough stock left.` });
+      }
+      if (/UNAVAILABLE:/.test(msg)) {
+        const name = msg.split('UNAVAILABLE:')[1]?.trim() || 'an item';
+        return res.status(409).json({ success: false, message: `"${name}" is no longer available.` });
+      }
+      if (/Could not find the function|does not exist|schema cache/i.test(msg)) {
+        console.error('[Orders] reserve_order_stock RPC missing — run migration 003_order_payment_stock.sql');
+      } else {
+        console.error('[Orders] Stock reservation failed:', msg);
+      }
+      return res.status(500).json({ success: false, message: 'Checkout is temporarily unavailable. Please try again shortly.' });
+    }
+    // 2. Persist the pending order (release stock if the insert fails).
+    const insertPayload = appliedCoupon ? { ...orderPayload, coupon_code: appliedCoupon } : orderPayload;
+    let { data: orderRow, error: insertError } = await supabase.from('orders').insert(insertPayload).select().single();
+    if (insertError && appliedCoupon && /coupon_code/.test(insertError.message)) {
+      ({ data: orderRow, error: insertError } = await supabase.from('orders').insert(orderPayload).select().single());
+    }
+    if (insertError || !orderRow) {
+      await supabase.rpc('release_order_stock', { p_items: orderItems, p_order_ref: orderNumber }).then(() => {}, () => {});
+      throw new Error(insertError?.message || 'Order could not be created.');
+    }
+
+    // 3. Zero-amount orders (e.g. a 100% coupon) need no payment step.
+    if (totalAmount <= 0) {
+      const finalized = await finalizePaidOrder(orderRow, { method: 'free' });
+      return res.status(201).json({ success: true, message: 'Order confirmed', order: finalized, razorpay: null });
+    }
+
+    // 4. No gateway configured → leave order pending, tell the client.
+    if (!razorpay) {
+      return res.status(201).json({
+        success: true,
+        message: 'Order created, but online payment is not configured.',
+        order: formatOrderResponse(orderRow),
+        razorpay: null,
       });
     }
 
-    // Trigger automated order confirmation email asynchronously
-    sendOrderConfirmationEmail(savedOrder).catch((err) => {
-      console.error('[Email Warning] Asynchronous email dispatch error:', err.message);
-    });
+    // 5. Create the Razorpay order the browser will pay against.
+    try {
+      const rzpOrder = await razorpay.orders.create({
+        amount: Math.round(totalAmount * 100), // paise
+        currency: 'INR',
+        receipt: orderNumber,
+        notes: { orderNumber },
+      });
+      await supabase.from('orders').update({ razorpay_order_id: rzpOrder.id }).eq('id', orderRow.id);
+      orderRow.razorpay_order_id = rzpOrder.id;
 
-    return res.status(201).json({
-      success: true,
-      message: 'Order created successfully',
-      order: savedOrder,
-    });
+      return res.status(201).json({
+        success: true,
+        message: 'Order created successfully',
+        order: formatOrderResponse(orderRow),
+        razorpay: { keyId: razorpayKeyId, orderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency },
+      });
+    } catch (payErr) {
+      await supabase.rpc('release_order_stock', { p_items: orderItems, p_order_ref: orderNumber }).then(() => {}, () => {});
+      await supabase.from('orders').update({ payment_status: 'failed', order_status: 'cancelled' }).eq('id', orderRow.id);
+      console.error('[Orders] Razorpay order creation failed:', payErr.message);
+      return res.status(502).json({ success: false, message: 'Could not start the payment. Please try again.' });
+    }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -357,6 +443,83 @@ router.get('/:orderNumber', async (req, res) => {
       message: 'Error fetching order',
       error: error.message,
     });
+  }
+});
+
+// POST /api/orders/verify-payment — Confirm a Razorpay payment & finalize order
+router.post('/verify-payment', async (req, res) => {
+  try {
+    const { orderNumber, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
+    if (!orderNumber || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Missing payment verification details.' });
+    }
+    if (!supabase) return res.status(503).json({ success: false, message: 'Database not configured.' });
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({ success: false, message: 'Payment gateway not configured.' });
+    }
+
+    const { data: orderRow, error } = await supabase.from('orders').select('*').eq('order_number', orderNumber).single();
+    if (error || !orderRow) return res.status(404).json({ success: false, message: 'Order not found.' });
+
+    // Payment must correspond to the Razorpay order we created for this order.
+    if (orderRow.razorpay_order_id && orderRow.razorpay_order_id !== razorpay_order_id) {
+      return res.status(400).json({ success: false, message: 'Payment does not match this order.' });
+    }
+
+    // Idempotent: already finalized.
+    if (orderRow.payment_status === 'paid') {
+      return res.json({ success: true, message: 'Payment already verified.', order: formatOrderResponse(orderRow) });
+    }
+
+    // Verify the HMAC-SHA256 signature (constant-time compare).
+    const expected = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+    const sigBuf = Buffer.from(razorpay_signature, 'utf8');
+    const expBuf = Buffer.from(expected, 'utf8');
+    const valid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+
+    if (!valid) {
+      await supabase.from('orders').update({ payment_status: 'failed' }).eq('id', orderRow.id);
+      return res.status(400).json({ success: false, message: 'Payment verification failed.' });
+    }
+
+    const finalized = await finalizePaidOrder(orderRow, {
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+    });
+    return res.json({ success: true, message: 'Payment verified successfully.', order: finalized });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Payment verification error.', error: err.message });
+  }
+});
+
+// POST /api/orders/:orderNumber/cancel — Release a pending (unpaid) order's
+// reserved stock. Requires the razorpay_order_id as a capability token so a
+// stranger can't release stock by guessing order numbers.
+router.post('/:orderNumber/cancel', async (req, res) => {
+  try {
+    if (!supabase) return res.json({ success: true });
+    const { orderNumber } = req.params;
+    const { razorpay_order_id } = req.body || {};
+
+    const { data: orderRow } = await supabase.from('orders').select('*').eq('order_number', orderNumber).single();
+    if (!orderRow) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (orderRow.payment_status === 'paid') {
+      return res.status(409).json({ success: false, message: 'Order is already paid.' });
+    }
+    if (!orderRow.razorpay_order_id || orderRow.razorpay_order_id !== razorpay_order_id) {
+      return res.status(403).json({ success: false, message: 'Not allowed to cancel this order.' });
+    }
+
+    if (orderRow.order_status !== 'cancelled') {
+      await supabase.rpc('release_order_stock', { p_items: orderRow.items || [], p_order_ref: orderNumber }).then(() => {}, () => {});
+      await supabase.from('orders').update({ payment_status: 'failed', order_status: 'cancelled' }).eq('id', orderRow.id);
+    }
+    return res.json({ success: true, message: 'Order cancelled and stock released.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not cancel order.', error: err.message });
   }
 });
 

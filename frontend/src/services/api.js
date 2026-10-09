@@ -57,3 +57,36 @@ export const subscribeNewsletter = async (email) => {
     return err.response?.data || { success: false, message: 'Could not subscribe right now. Please try again.' };
   }
 };
+
+// --- Orders & checkout -----------------------------------------------------
+// These go through the same VITE_API_URL-configured instance as everything
+// else (previously they used raw axios with hardcoded /api paths, which broke
+// in any split-origin production deploy). They intentionally do NOT fabricate
+// fallback data — the caller must handle failures.
+
+export const lookupPincode = async (pincode) => {
+  const { data } = await api.get(`/orders/pincode/${pincode}`);
+  return data;
+};
+
+export const createOrder = async (payload) => {
+  const { data } = await api.post('/orders', payload);
+  return data;
+};
+
+export const verifyPayment = async (payload) => {
+  const { data } = await api.post('/orders/verify-payment', payload);
+  return data;
+};
+
+export const cancelOrder = async (orderNumber, razorpayOrderId) => {
+  const { data } = await api.post(`/orders/${orderNumber}/cancel`, { razorpay_order_id: razorpayOrderId });
+  return data;
+};
+
+export const getOrder = async (orderNumber) => {
+  const { data } = await api.get(`/orders/${orderNumber}`);
+  return data;
+};
+
+export default api;

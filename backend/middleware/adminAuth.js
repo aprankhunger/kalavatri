@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import supabase from '../db/supabase.js';
+import { wrapAdminUser } from '../db/adminUserDb.js';
 
 export const ACCESS_COOKIE_NAME = 'kv_admin_access';
 export const REFRESH_COOKIE_NAME = 'kv_admin_refresh';
@@ -71,32 +72,10 @@ export const requireAdminAuth = async (req, res, next) => {
       });
     }
 
-    // Wrap row in helper object
-    const user = {
-      _id: userRow.id,
-      id: userRow.id,
-      name: userRow.name,
-      email: userRow.email,
-      role: userRow.role,
-      isActive: userRow.is_active,
-      isDeleted: userRow.is_deleted,
-      twoFactorEnabled: userRow.two_factor_enabled,
-      twoFactorSecret: userRow.two_factor_secret,
-      twoFactorBackupCodes: userRow.two_factor_backup_codes || [],
-      failedLoginAttempts: userRow.failed_login_attempts,
-      lockUntil: userRow.lock_until ? new Date(userRow.lock_until) : null,
-      toSafeObject() {
-        return {
-          id: userRow.id,
-          name: userRow.name,
-          email: userRow.email,
-          role: userRow.role,
-          twoFactorEnabled: userRow.two_factor_enabled,
-        };
-      },
-    };
-
-    req.adminUser = user;
+    // Wrap row with shared helper so req.adminUser exposes hasPermission(),
+    // isLocked(), toSafeObject(), etc. (previously missing — every
+    // requirePermission()-guarded route threw a TypeError and 500'd).
+    req.adminUser = wrapAdminUser(userRow);
     next();
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error', message: error.message });

@@ -48,6 +48,10 @@ const getPublicSeedProducts = () => {
 // GET /api/products — Get all active published products for customer storefront
 router.get('/', async (req, res) => {
   try {
+    // Seed data is a DEV-ONLY fallback for when no database is configured.
+    // When Supabase is connected we return real data (even if empty) and never
+    // substitute demo products — serving fake, orderable items in production
+    // would let customers "buy" products that don't exist.
     if (!supabase) {
       return res.json(getPublicSeedProducts());
     }
@@ -71,14 +75,15 @@ router.get('/', async (req, res) => {
 
     const { data, error } = await query;
 
-    if (error || !data || data.length === 0) {
-      return res.json(getPublicSeedProducts());
+    if (error) {
+      console.error('[Products] Query failed:', error.message);
+      return res.status(502).json({ message: 'Unable to load products right now. Please try again shortly.' });
     }
 
-    const formatted = data.map(formatProductResponse);
-    return res.json(formatted);
-  } catch {
-    return res.json(getPublicSeedProducts());
+    return res.json((data || []).map(formatProductResponse));
+  } catch (error) {
+    console.error('[Products] Unexpected error:', error.message);
+    return res.status(500).json({ message: 'Unable to load products right now. Please try again shortly.' });
   }
 });
 
@@ -86,8 +91,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     if (!supabase) {
-      const publicSeeds = getPublicSeedProducts();
-      const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
+      const seedProduct = getPublicSeedProducts().find((p) => p.slug === req.params.slug);
       if (seedProduct) return res.json(seedProduct);
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -98,21 +102,21 @@ router.get('/:slug', async (req, res) => {
       .eq('slug', req.params.slug)
       .eq('is_deleted', false)
       .eq('status', 'published')
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
-      const publicSeeds = getPublicSeedProducts();
-      const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
-      if (seedProduct) return res.json(seedProduct);
+    if (error) {
+      console.error('[Products] Detail query failed:', error.message);
+      return res.status(502).json({ message: 'Unable to load this product right now. Please try again shortly.' });
+    }
+
+    if (!data) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
     return res.json(formatProductResponse(data));
   } catch (error) {
-    const publicSeeds = getPublicSeedProducts();
-    const seedProduct = publicSeeds.find((p) => p.slug === req.params.slug);
-    if (seedProduct) return res.json(seedProduct);
-    return res.status(500).json({ message: error.message });
+    console.error('[Products] Detail unexpected error:', error.message);
+    return res.status(500).json({ message: 'Unable to load this product right now. Please try again shortly.' });
   }
 });
 
