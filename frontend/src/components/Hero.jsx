@@ -109,15 +109,17 @@ const Hero = () => {
           </div>
 
           <div className="hero-image">
-            <div className="hero-image-frame">
-              <img
-                src={hero.image || '/images/hero_banner.jpg'}
-                alt="Kalavatri handcrafted juttis"
-                className="hero-image-reveal"
-              />
+            <div className="hero-image-wrapper">
+              <div className="hero-image-frame">
+                <img
+                  src={hero.image || '/images/hero_banner.jpg'}
+                  alt="Kalavatri handcrafted juttis"
+                  className="hero-image-reveal"
+                />
+              </div>
+              <div className="hero-star star-1">{STAR}</div>
+              <div className="hero-star star-2">{STAR}</div>
             </div>
-            <div className="hero-star star-1">{STAR}</div>
-            <div className="hero-star star-2">{STAR}</div>
           </div>
         </div>
       </div>
