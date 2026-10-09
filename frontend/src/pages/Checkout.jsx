@@ -6,8 +6,6 @@ import {
   FiTruck, 
   FiCheckCircle, 
   FiAlertCircle, 
-  FiLock,
-  FiMapPin,
   FiLoader
 } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
@@ -55,7 +53,6 @@ const Checkout = () => {
   // UI / Status states
   const [pincodeLoading, setPincodeLoading] = useState(false);
   const [pincodeDetected, setPincodeDetected] = useState(false);
-  const [pincodeMessage, setPincodeMessage] = useState('');
   const [pincodeError, setPincodeError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -99,7 +96,6 @@ const Checkout = () => {
         fetchPincodeDetails(cleanPin);
       } else {
         setPincodeDetected(false);
-        setPincodeMessage('');
         setPincodeError('');
       }
     }
@@ -109,7 +105,6 @@ const Checkout = () => {
   const fetchPincodeDetails = async (pin) => {
     setPincodeLoading(true);
     setPincodeError('');
-    setPincodeMessage('');
 
     try {
       // First try our backend proxy endpoint (same configurable API origin)
@@ -121,7 +116,6 @@ const Checkout = () => {
           state: data.state,
         }));
         setPincodeDetected(true);
-        setPincodeMessage(`📍 Auto-detected: ${data.city}, ${data.state}`);
         setPincodeLoading(false);
         return;
       }
@@ -141,7 +135,6 @@ const Checkout = () => {
             state: detectedState,
           }));
           setPincodeDetected(true);
-          setPincodeMessage(`📍 Auto-detected: ${detectedCity}, ${detectedState}`);
           setPincodeLoading(false);
           return;
         }
@@ -357,9 +350,6 @@ const Checkout = () => {
           <Link to="/cart" className="back-link">
             <FiArrowLeft /> Back to Cart
           </Link>
-          <div className="secure-badge-pill">
-            <FiLock /> 256-Bit SSL Encrypted Express Checkout
-          </div>
         </div>
 
         <div className="checkout-layout">
@@ -470,7 +460,6 @@ const Checkout = () => {
                     )}
                   </div>
 
-                  {pincodeMessage && <div className="pincode-auto-pill" role="status" aria-live="polite">{pincodeMessage}</div>}
                   {pincodeError && <div className="pincode-warn-pill" role="status" aria-live="polite"><FiAlertCircle aria-hidden="true" /> {pincodeError}</div>}
                   {errors.pincode && <span className="field-error">{errors.pincode}</span>}
                 </div>
