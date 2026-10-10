@@ -18,6 +18,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('details');
   const [isAdded, setIsAdded] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   // Reset isAdded if user changes their mind on size or color
   useEffect(() => {
@@ -164,7 +165,16 @@ const ProductDetail = () => {
           {/* Sizes */}
           {product.sizes && product.sizes.length > 0 && (
             <div className="pdp-sizes">
-              <span className="option-label">Choose Size</span>
+              <div className="pdp-sizes-header">
+                <span className="option-label">Choose Size</span>
+                <button
+                  type="button"
+                  className="size-guide-link"
+                  onClick={() => setShowSizeGuide(true)}
+                >
+                  📏 Size Guide
+                </button>
+              </div>
               <div className="size-options">
                 {product.sizes.map(size => (
                   <button 
@@ -279,6 +289,24 @@ const ProductDetail = () => {
           <Newsletter />
         </div>
       </section>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <div className="size-guide-overlay" onClick={() => setShowSizeGuide(false)}>
+          <div className="size-guide-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="size-guide-close"
+              onClick={() => setShowSizeGuide(false)}
+              aria-label="Close size guide"
+            >
+              ×
+            </button>
+            <h3 className="size-guide-title">Size Guide</h3>
+            <img src="/images/size-guide.webp" alt="Jutti size guide chart" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
