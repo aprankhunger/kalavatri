@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import ProductCard from '../components/ProductCard';
-import TestimonialCard from '../components/TestimonialCard';
 import Newsletter from '../components/Newsletter';
-import { getProducts, getReviews } from '../services/api';
+import { getProducts } from '../services/api';
 import { useStoreConfig } from '../hooks/useStoreConfig';
 import './Home.css';
 
@@ -12,18 +11,15 @@ const CRAFTS = ['ZARDOZI', 'KUNDAN', 'MIRROR WORK', 'PHULKARI', 'THREAD ART', 'G
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const sliderRef = useRef(null);
   const { config } = useStoreConfig();
   const { homepage, categories } = config;
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getProducts(), getReviews()]).then(([productsData, reviewsData]) => {
+    getProducts().then((productsData) => {
       if (cancelled) return;
       setProducts(Array.isArray(productsData) ? productsData : []);
-      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       setLoading(false);
     });
     return () => {
@@ -45,7 +41,7 @@ const Home = () => {
     );
     document.querySelectorAll('.animate-on-scroll').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [loading, homepage.showCategories, homepage.showTestimonials]);
+  }, [loading, homepage.showCategories]);
 
   const newArrivals = products.filter((p) => p.badge === 'new').slice(0, 4);
   const bestsellers = products.filter((p) => p.badge === 'bestseller' || p.badge === 'sale').slice(0, 4);
@@ -59,12 +55,6 @@ const Home = () => {
 
   const homeCategories = categories.filter((c) => c.showOnHome !== false).slice(0, 4);
   const sizePattern = ['size-sm', 'size-lg', 'size-lg', 'size-sm'];
-
-  const scrollTestimonials = (direction) => {
-    const el = sliderRef.current;
-    if (!el) return;
-    el.scrollBy({ left: direction * (el.clientWidth * 0.8), behavior: 'smooth' });
-  };
 
   if (loading) {
     return (
@@ -146,25 +136,6 @@ const Home = () => {
                   </Link>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {homepage.showTestimonials && reviews.length > 0 && (
-        <section className="section" id="testimonials">
-          <div className="container">
-            <div className="section-header align-left animate-on-scroll">
-              <h2>{homepage.testimonialsTitle}</h2>
-              <div className="slider-nav">
-                <button className="slider-btn" onClick={() => scrollTestimonials(-1)} aria-label="Previous reviews">←</button>
-                <button className="slider-btn" onClick={() => scrollTestimonials(1)} aria-label="Next reviews">→</button>
-              </div>
-            </div>
-            <div className="testimonials-slider animate-on-scroll" ref={sliderRef}>
-              {reviews.map((review) => (
-                <TestimonialCard key={review._id} review={review} />
-              ))}
             </div>
           </div>
         </section>

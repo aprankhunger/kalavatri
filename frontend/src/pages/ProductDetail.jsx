@@ -45,19 +45,6 @@ const ProductDetail = () => {
     fetchProductData();
   }, [slug]);
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const full = Math.floor(rating);
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <svg key={i} width="20" height="20" viewBox="0 0 18 18" fill="none" className={i < full ? 'star-filled' : 'star-empty'}>
-          <path d="M9.44772 1.39174C9.28185 1.05037 8.79979 1.05037 8.63391 1.39174L6.50547 5.77259L1.80206 6.47169C1.43323 6.52649 1.28588 6.98402 1.5529 7.24765L4.95461 10.6041L4.15243 15.4215C4.08945 15.7993 4.47545 16.0822 4.80521 15.9126L9.04082 13.7371L13.2764 15.9126C13.6062 16.0822 13.9922 15.7993 13.9292 15.4215L13.127 10.6041L16.5287 7.24765C16.7958 6.98402 16.6484 6.52649 16.2796 6.47169L11.5762 5.77259L9.44772 1.39174Z" />
-        </svg>
-      );
-    }
-    return stars;
-  };
-
   if (loading) {
     return (
       <div className="loading-screen">
@@ -120,12 +107,7 @@ const ProductDetail = () => {
 
         <div className="product-info">
           <h1 className="pdp-title">{product.name}</h1>
-          
-          <div className="pdp-rating">
-            <div className="stars">{renderStars(product.rating)}</div>
-            <span className="rating-text">{product.rating.toFixed(1)}/5</span>
-          </div>
-          
+
           <div className="pdp-price">
             <span className="price-current">₹{product.price.toLocaleString()}</span>
             {product.originalPrice && (
@@ -221,19 +203,13 @@ const ProductDetail = () => {
       {/* Tabs */}
       <section className="product-tabs container">
         <div className="tab-headers">
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`}
             onClick={() => setActiveTab('details')}
           >
             Product Details
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reviews')}
-          >
-            Rating & Reviews
-          </button>
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
             onClick={() => setActiveTab('faq')}
           >
@@ -252,12 +228,6 @@ const ProductDetail = () => {
                 <li style={{ marginBottom: '10px' }}><strong>Embellishment:</strong> Hand-stitched Zardozi / Threadwork</li>
                 <li style={{ marginBottom: '10px' }}><strong>Care:</strong> Wipe with a clean, dry cloth when needed</li>
               </ul>
-            </div>
-          )}
-          {activeTab === 'reviews' && (
-            <div className="tab-pane">
-              <h3>Customer Reviews</h3>
-              <p>Reviews will be loaded here based on the Figma template.</p>
             </div>
           )}
           {activeTab === 'faq' && (
