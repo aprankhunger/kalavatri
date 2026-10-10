@@ -28,6 +28,7 @@ import CategoriesManager from './admin/pages/CategoriesManager';
 import ContentManager from './admin/pages/ContentManager';
 import StoreSettings from './admin/pages/StoreSettings';
 import StaffManager from './admin/pages/StaffManager';
+import ScrollToTop from './components/ScrollToTop';
 
 import './App.css';
 
@@ -35,6 +36,7 @@ function App() {
   return (
     <AdminAuthProvider>
       <Router>
+        <ScrollToTop />
         <Routes>
           {/* Secret Obfuscated Admin Portal Routes */}
           <Route path={`${ADMIN_PATH}/login`} element={<AdminLogin />} />

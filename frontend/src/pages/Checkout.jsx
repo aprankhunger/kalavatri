@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   FiArrowLeft, 
   FiShield, 
-  FiTruck, 
   FiCheckCircle, 
   FiAlertCircle, 
   FiLoader
@@ -266,7 +265,7 @@ const Checkout = () => {
     }
 
     if (!validateForm()) {
-      window.scrollTo({ top: 100, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -582,10 +581,6 @@ const Checkout = () => {
                   <div className="trust-item">
                     <FiShield size={20} className="trust-icon" />
                     <span>100% Secure &amp; Verified</span>
-                  </div>
-                  <div className="trust-item">
-                    <FiTruck size={20} className="trust-icon" />
-                    <span>Free Shipping Across India</span>
                   </div>
                   <div className="trust-item">
                     <FiCheckCircle size={20} className="trust-icon" />

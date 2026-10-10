@@ -352,7 +352,7 @@
 
 .trust-features {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding-top: 14px;
   border-top: 1px solid rgba(42, 34, 32, 0.08);
