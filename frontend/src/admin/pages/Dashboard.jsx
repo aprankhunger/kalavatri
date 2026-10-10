@@ -87,7 +87,7 @@ const Dashboard = () => {
           <div className="admin-metric-data">
             <span className="admin-metric-label">Session Protection</span>
             <div className="admin-metric-val">HttpOnly JWT</div>
-            <span className="admin-metric-sub">30m Auto-Logout Active</span>
+            <span className="admin-metric-sub">Auto-Logout Off</span>
           </div>
         </div>
 

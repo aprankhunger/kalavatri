@@ -1,9 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import adminApi from '../services/adminApi';
 
 const AdminAuthContext = createContext(null);
-
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
@@ -13,17 +11,6 @@ export const AdminAuthProvider = ({ children }) => {
 
   // 2FA flow state
   const [twoFactorPrompt, setTwoFactorPrompt] = useState(null); // { mode: 'verify'|'setup', tempToken, qrCodeDataUrl, secret }
-
-  const inactivityTimerRef = useRef(null);
-
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    if (isAuthenticated) {
-      inactivityTimerRef.current = setTimeout(() => {
-        handleLogout('Session expired due to 30 minutes of inactivity.');
-      }, INACTIVITY_TIMEOUT_MS);
-    }
-  }, [isAuthenticated]);
 
   // Check existing session on load
   const checkSession = useCallback(async () => {
@@ -54,22 +41,6 @@ export const AdminAuthProvider = ({ children }) => {
     window.addEventListener('admin:session-expired', handleSessionExpired);
     return () => window.removeEventListener('admin:session-expired', handleSessionExpired);
   }, [checkSession]);
-
-  // Listen for user activity to reset inactivity timer
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    const handleActivity = () => resetInactivityTimer();
-
-    events.forEach((ev) => window.addEventListener(ev, handleActivity));
-    resetInactivityTimer();
-
-    return () => {
-      events.forEach((ev) => window.removeEventListener(ev, handleActivity));
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    };
-  }, [isAuthenticated, resetInactivityTimer]);
 
   const handleLogin = async (email, password) => {
     const res = await adminApi.post('/auth/login', { email, password });
