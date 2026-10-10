@@ -92,7 +92,13 @@ const Navbar = () => {
                 {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
               </button>
               <Link to="/" className="navbar-brand" aria-label="Kalavatri home">
-                <img src="/images/logo-banner.svg" alt="Kalavatri" className="navbar-logo" />
+                <img
+                  src="/images/logo-wordmark.png"
+                  alt="Kalavatri"
+                  className="navbar-logo"
+                  width="611"
+                  height="150"
+                />
               </Link>
             </div>
 
