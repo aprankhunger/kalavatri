@@ -45,6 +45,13 @@
   font-weight: 700;
   color: var(--text-dark);
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+.navbar-logo {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 .nav-links {
@@ -140,6 +147,7 @@
 }
 @media (max-width: 768px) {
   .navbar-brand { font-size: 25px; }
+  .navbar-logo { height: 32px; }
   .navbar { padding: 16px 0; }
   .announcement-bar { font-size: 12px; }
   .announcement-bar .close-btn { display: none; }

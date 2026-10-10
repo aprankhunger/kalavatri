@@ -91,7 +91,9 @@ const Navbar = () => {
               >
                 {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
               </button>
-              <Link to="/" className="navbar-brand">KALAVATRI</Link>
+              <Link to="/" className="navbar-brand" aria-label="Kalavatri home">
+                <img src="/images/logo-banner.svg" alt="Kalavatri" className="navbar-logo" />
+              </Link>
             </div>
 
             <div className={`nav-links ${mobileOpen ? 'mobile-open' : ''}`}>
