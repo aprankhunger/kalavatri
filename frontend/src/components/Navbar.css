@@ -28,6 +28,7 @@
   background: var(--white);
   border-bottom: 1px solid var(--border);
   padding: 24px 0;
+  position: relative;
 }
 .navbar-inner {
   display: flex;
@@ -144,11 +145,24 @@
     z-index: 999;
     box-shadow: var(--shadow-sm);
   }
+
+  /* Mobile search: revealed as a full-width row under the bar */
+  .search-bar.mobile-visible {
+    display: block;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    width: auto;
+    background: var(--white);
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    z-index: 998;
+  }
 }
 @media (max-width: 768px) {
   .navbar-brand { font-size: 25px; }
   .navbar-logo { height: 32px; }
   .navbar { padding: 16px 0; }
-  .announcement-bar { font-size: 12px; }
+  .announcement-bar { font-size: 12px; padding: 10px 36px; }
   .announcement-bar .close-btn { display: none; }
 }

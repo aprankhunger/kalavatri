@@ -99,3 +99,9 @@
   .footer-brand-col { max-width: 100%; }
   .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
 }
+@media (max-width: 480px) {
+  .footer-links-grid { grid-template-columns: 1fr; gap: 28px; }
+  .footer-col h4 { margin-bottom: 16px; }
+  .footer-col ul li { margin-bottom: 12px; }
+  .payment-badges { flex-wrap: wrap; justify-content: center; }
+}

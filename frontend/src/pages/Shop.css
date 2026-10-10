@@ -126,3 +126,20 @@
 .shop-empty p {
   color: rgba(0, 0, 0, 0.6);
 }
+
+@media (max-width: 480px) {
+  .shop-page { padding: 16px 0 56px; }
+  .shop-toolbar { flex-direction: column; align-items: stretch; gap: 12px; }
+  .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+  .shop-toolbar-right { width: 100%; }
+  .shop-toolbar-right select { flex: 1; }
+  .shop-grid { gap: 12px; }
+}

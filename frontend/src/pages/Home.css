@@ -157,3 +157,14 @@
   .section-header h2 { font-size: 32px; }
   .testimonials-slider > * { min-width: 300px; }
 }
+@media (max-width: 480px) {
+  .brand-strip { padding: 16px 0; }
+  .brand-strip-item { font-size: 18px; }
+  .brand-strip-sep { font-size: 12px; margin: 0 18px; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .categories-container { padding: 28px 16px; border-radius: 24px; }
+  .categories-container .section-header { margin-bottom: 32px; }
+  .size-sm, .size-lg { height: 160px; }
+  .category-title { font-size: 20px; top: 12px; left: 16px; }
+  .testimonials-slider > * { min-width: 260px; }
+}

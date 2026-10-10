@@ -193,3 +193,11 @@ h1, h2, h3, h4, h5 {
   }
   .animate-on-scroll, .stagger-children > * { opacity: 1; transform: none; }
 }
+
+/* === Small phones === */
+@media (max-width: 480px) {
+  .btn { padding: 14px 28px; font-size: 15px; }
+  .section { padding: 44px 0; }
+  .section-header { margin-bottom: 32px; }
+  .section-header h2 { font-size: clamp(26px, 7vw, 34px); }
+}

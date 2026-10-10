@@ -622,3 +622,9 @@
     padding: 20px 16px;
   }
 }
+
+@media (max-width: 480px) {
+  .form-section { padding: 16px 14px; }
+  .checkout-title { font-size: 1.4rem; }
+  .trust-features { grid-template-columns: 1fr; }
+}

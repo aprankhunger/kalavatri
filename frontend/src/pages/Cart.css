@@ -197,3 +197,13 @@
   .summary-label, .summary-value, .total-row span:first-child { font-size: 16px; }
   .total-row span:last-child { font-size: 20px; }
 }
+@media (max-width: 480px) {
+  .cart-title { font-size: 30px; }
+  .cart-items, .cart-summary { padding: 16px; }
+  .cart-item { gap: 10px; }
+  .cart-item-image { width: 84px; height: 84px; }
+  .cart-item-footer { flex-wrap: wrap; gap: 10px; }
+  .cart-item-footer .quantity-selector { width: 92px; padding: 6px 10px; }
+  .promo-code { flex-direction: column; }
+  .promo-code .btn { width: 100%; }
+}

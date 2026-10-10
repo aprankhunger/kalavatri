@@ -235,3 +235,7 @@
     font-size: 13px;
   }
 }
+@media (max-width: 480px) {
+  .policy-page { padding: 28px 0 48px; }
+  .policy-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
