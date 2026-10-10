@@ -63,7 +63,7 @@ const RefundPolicy = () => {
           <p>To initiate a replacement request, follow these steps:</p>
           <ol>
             <li>
-              Email us at <a href="mailto:support@kalavatri.in">support@kalavatri.in</a> within
+              Email us at <a href="mailto:supportkalavatri@gmail.com">supportkalavatri@gmail.com</a> within
               7 days of receiving your order.
             </li>
             <li>
@@ -157,7 +157,7 @@ const RefundPolicy = () => {
         <div className="policy-contact">
           <h3>Need Help?</h3>
           <p>If you have any questions about our Refund &amp; Cancellation Policy, please contact us:</p>
-          <p>Email: <a href="mailto:support@kalavatri.in">support@kalavatri.in</a></p>
+          <p>Email: <a href="mailto:supportkalavatri@gmail.com">supportkalavatri@gmail.com</a></p>
         </div>
 
         <a

@@ -52,7 +52,7 @@ const AdminProtectedRoute = ({ requiredRoles = [], requiredPermission = null }) 
         </h2>
         <p style={{ color: 'rgba(42, 34, 32, 0.7)', fontSize: '15px', lineHeight: '1.6', marginBottom: '24px' }}>
           Your role (<strong>{adminUser?.role?.replace('_', ' ').toUpperCase()}</strong>) does not have authorization
-          to view this module. If you require access, contact the Super Admin at support@kalavatri.in.
+          to view this module. If you require access, contact the Super Admin at supportkalavatri@gmail.com.
         </p>
         <a
           href={`${ADMIN_PATH}/dashboard`}

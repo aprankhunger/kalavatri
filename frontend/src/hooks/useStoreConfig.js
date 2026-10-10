@@ -34,7 +34,7 @@ export const DEFAULT_STORE_CONFIG = {
   },
   footer: {
     description: 'Handcrafted Punjabi juttis made by master artisans — heritage craft for the modern wardrobe.',
-    contactEmail: 'support@kalavatri.com',
+    contactEmail: 'supportkalavatri@gmail.com',
     contactPhone: '',
     instagramUrl: '',
     facebookUrl: '',

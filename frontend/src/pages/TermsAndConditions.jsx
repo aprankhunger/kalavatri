@@ -128,7 +128,7 @@ const TermsAndConditions = () => {
         <div className="policy-contact">
           <h3>Questions?</h3>
           <p>If you have any questions about these Terms &amp; Conditions, please contact us:</p>
-          <p>Email: <a href="mailto:support@kalavatri.in">support@kalavatri.in</a></p>
+          <p>Email: <a href="mailto:supportkalavatri@gmail.com">supportkalavatri@gmail.com</a></p>
         </div>
 
         <a

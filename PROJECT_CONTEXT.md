@@ -16,7 +16,7 @@
 | **Market**       | India (prices in INR ₹)                             |
 | **Target**       | Women & Men — bridal, festive, everyday, designer   |
 | **Currency**     | Indian Rupees (₹)                                   |
-| **Contact**      | support@kalavatri.in                                |
+| **Contact**      | supportkalavatri@gmail.com                          |
 | **Customer Auth** | **NONE**. No customer login or signup anywhere on the site. 100% Guest Checkout (Name, Phone, Email, Shipping Address) + Order confirmation email. |
 | **Admin Auth**    | Isolated to `/admin` panel only (2FA, roles, HttpOnly session cookies) |
 | **Tax / GST**    | No GST                                              |

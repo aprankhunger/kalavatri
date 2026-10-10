@@ -113,7 +113,7 @@ const PrivacyPolicy = () => {
           </ul>
           <p>
             To exercise any of these rights, please contact us at{' '}
-            <a href="mailto:support@kalavatri.in">support@kalavatri.in</a>.
+            <a href="mailto:supportkalavatri@gmail.com">supportkalavatri@gmail.com</a>.
           </p>
         </div>
 
@@ -147,7 +147,7 @@ const PrivacyPolicy = () => {
         <div className="policy-contact">
           <h3>Contact Us</h3>
           <p>If you have any questions or concerns about our Privacy Policy, please reach out:</p>
-          <p>Email: <a href="mailto:support@kalavatri.in">support@kalavatri.in</a></p>
+          <p>Email: <a href="mailto:supportkalavatri@gmail.com">supportkalavatri@gmail.com</a></p>
         </div>
 
         <a

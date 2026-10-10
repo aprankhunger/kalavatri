@@ -128,7 +128,7 @@ export const sendOrderConfirmationEmail = async (order) => {
             </p>
           </div>
           <div class="footer">
-            <p style="margin: 0;">KALAVATRI | support@kalavatri.in | kalavatri.in</p>
+            <p style="margin: 0;">KALAVATRI | ${process.env.SUPPORT_EMAIL || 'supportkalavatri@gmail.com'} | kalavatri.in</p>
             <p style="margin: 5px 0 0; color: #888;">Handcrafted in India with pure artisan pride.</p>
           </div>
         </div>
