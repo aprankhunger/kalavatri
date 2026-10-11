@@ -29,13 +29,15 @@ const ProductDetail = () => {
     const fetchProductData = async () => {
       setLoading(true);
       window.scrollTo(0, 0);
-      const data = await getProductBySlug(slug);
+      // Fetch the product and the catalog (for related items) in parallel
+      // instead of waiting for one before starting the other.
+      const [data, allProducts] = await Promise.all([
+        getProductBySlug(slug),
+        getProducts(),
+      ]);
       setProduct(data);
-      
-      // Fetch related products (just first 4 for now)
-      const allProducts = await getProducts();
       setRelatedProducts(allProducts.filter(p => p.slug !== slug).slice(0, 4));
-      
+
       if (data) {
         if (data.sizes && data.sizes.length > 0) setSelectedSize(data.sizes[0]);
         if (data.colors && data.colors.length > 0) setSelectedColor(data.colors[0]);

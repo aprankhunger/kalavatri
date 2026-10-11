@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiCheck } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
@@ -8,6 +9,11 @@ const ProductCard = ({ product }) => {
   const { addToCart, isInCart } = useCart();
   const navigate = useNavigate();
   const inCart = isInCart(_id);
+
+  const imageWebp =
+    typeof image === 'string' && image.startsWith('/images/') && image.endsWith('.jpg')
+      ? image.replace(/\.jpg$/, '.webp')
+      : null;
 
   const handleCartClick = (e) => {
     e.preventDefault();
@@ -22,7 +28,10 @@ const ProductCard = ({ product }) => {
   return (
     <Link to={`/product/${slug}`} className="product-card">
       <div className="product-card-image">
-        <img src={image} alt={name} loading="lazy" />
+        <picture>
+          {imageWebp && <source srcSet={imageWebp} type="image/webp" />}
+          <img src={image} alt={name} loading="lazy" decoding="async" width="800" height="800" />
+        </picture>
         {discount > 0 && <span className="product-card-tag">-{discount}%</span>}
       </div>
       <div className="product-card-body">
@@ -57,4 +66,4 @@ const ProductCard = ({ product }) => {
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

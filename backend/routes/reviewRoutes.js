@@ -12,7 +12,8 @@ router.get('/', async (req, res) => {
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error || !data || data.length === 0) {
       return res.json(seedReviews);
@@ -28,6 +29,7 @@ router.get('/', async (req, res) => {
       createdAt: r.created_at,
     }));
 
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.json(formatted);
   } catch {
     return res.json(seedReviews);

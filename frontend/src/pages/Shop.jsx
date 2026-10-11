@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FiX } from 'react-icons/fi';
 import ProductCard from '../components/ProductCard';
-import { getProducts } from '../services/api';
+import { useProducts } from '../hooks/useProducts';
 import { useStoreConfig } from '../hooks/useStoreConfig';
 import './Shop.css';
 
@@ -39,26 +39,13 @@ const sortProducts = (list, sort) => {
 
 const Shop = () => {
   const [params, setParams] = useSearchParams();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { products, isLoading: loading } = useProducts();
   const { config } = useStoreConfig();
 
   const category = params.get('category') || '';
   const badge = params.get('badge') || '';
   const search = params.get('search') || '';
   const sort = params.get('sort') || 'featured';
-
-  useEffect(() => {
-    let cancelled = false;
-    getProducts().then((data) => {
-      if (cancelled) return;
-      setProducts(Array.isArray(data) ? data : []);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(params);

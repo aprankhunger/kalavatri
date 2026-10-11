@@ -72,6 +72,12 @@ const Hero = () => {
   const { config } = useStoreConfig();
   const { hero } = config;
 
+  const heroSrc = hero.image || '/images/hero_banner.jpg';
+  const heroWebp =
+    heroSrc.startsWith('/images/') && heroSrc.endsWith('.jpg')
+      ? heroSrc.replace(/\.jpg$/, '.webp')
+      : null;
+
   return (
     <section className="hero">
       <div className="container">
@@ -111,11 +117,18 @@ const Hero = () => {
           <div className="hero-image">
             <div className="hero-image-wrapper">
               <div className="hero-image-frame">
-                <img
-                  src={hero.image || '/images/hero_banner.jpg'}
-                  alt="Kalavatri handcrafted juttis"
-                  className="hero-image-reveal"
-                />
+                <picture>
+                  {heroWebp && <source srcSet={heroWebp} type="image/webp" />}
+                  <img
+                    src={heroSrc}
+                    alt="Kalavatri handcrafted juttis"
+                    className="hero-image-reveal"
+                    width="1376"
+                    height="768"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </picture>
               </div>
               <div className="hero-star star-1">{STAR}</div>
               <div className="hero-star star-2">{STAR}</div>

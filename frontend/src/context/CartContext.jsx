@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const CartContext = createContext();
 
@@ -16,7 +16,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('kalavatri_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product, quantity, size, color) => {
+  const addToCart = useCallback((product, quantity, size, color) => {
     setCartItems(prev => {
       // Check if item with same id, size, and color already exists
       const existingItemIndex = prev.findIndex(
@@ -34,35 +34,44 @@ export const CartProvider = ({ children }) => {
       // Add new item
       return [...prev, { ...product, quantity, size, color }];
     });
-  };
+  }, []);
 
-  const updateQuantity = (index, delta) => {
+  const updateQuantity = useCallback((index, delta) => {
     setCartItems(prev => {
       const newCart = [...prev];
       const currentItem = newCart[index];
       const newQuantity = currentItem.quantity + delta;
-      
+
       if (newQuantity > 0) {
         newCart[index] = { ...currentItem, quantity: newQuantity };
       }
       return newCart;
     });
-  };
+  }, []);
 
-  const removeFromCart = (index) => {
+  const removeFromCart = useCallback((index) => {
     setCartItems(prev => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
-  };
+  }, []);
 
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
-  const isInCart = (productId) => cartItems.some((item) => item._id === productId);
+  const cartTotal = useMemo(
+    () => cartItems.reduce((total, item) => total + (item.price * item.quantity), 0),
+    [cartItems]
+  );
+  const cartCount = useMemo(
+    () => cartItems.reduce((count, item) => count + item.quantity, 0),
+    [cartItems]
+  );
+  const isInCart = useCallback(
+    (productId) => cartItems.some((item) => item._id === productId),
+    [cartItems]
+  );
 
-  return (
-    <CartContext.Provider value={{
+  const value = useMemo(
+    () => ({
       cartItems,
       isInCart,
       addToCart,
@@ -70,8 +79,13 @@ export const CartProvider = ({ children }) => {
       removeFromCart,
       clearCart,
       cartTotal,
-      cartCount
-    }}>
+      cartCount,
+    }),
+    [cartItems, isInCart, addToCart, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount]
+  );
+
+  return (
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

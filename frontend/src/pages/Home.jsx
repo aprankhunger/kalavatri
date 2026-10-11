@@ -1,31 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import ProductCard from '../components/ProductCard';
 import Newsletter from '../components/Newsletter';
-import { getProducts } from '../services/api';
+import { useProducts } from '../hooks/useProducts';
 import { useStoreConfig } from '../hooks/useStoreConfig';
 import './Home.css';
 
 const CRAFTS = ['ZARDOZI', 'KUNDAN', 'MIRROR WORK', 'PHULKARI', 'THREAD ART', 'GOTA PATTI'];
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { products, isLoading: loading } = useProducts();
   const { config } = useStoreConfig();
   const { homepage, categories } = config;
-
-  useEffect(() => {
-    let cancelled = false;
-    getProducts().then((productsData) => {
-      if (cancelled) return;
-      setProducts(Array.isArray(productsData) ? productsData : []);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

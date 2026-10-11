@@ -80,6 +80,9 @@ router.get('/', async (req, res) => {
       return res.status(502).json({ message: 'Unable to load products right now. Please try again shortly.' });
     }
 
+    // Catalog changes rarely; let Vercel's CDN serve repeat hits without
+    // re-invoking the function or re-querying Supabase.
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.json((data || []).map(formatProductResponse));
   } catch (error) {
     console.error('[Products] Unexpected error:', error.message);
@@ -113,6 +116,7 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.json(formatProductResponse(data));
   } catch (error) {
     console.error('[Products] Detail unexpected error:', error.message);
