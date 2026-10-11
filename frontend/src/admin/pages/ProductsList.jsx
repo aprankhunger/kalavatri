@@ -1,18 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import useAdminCategories from '../hooks/useAdminCategories';
 import {
   FiPlus,
   FiDownload,
-  FiUpload,
   FiSearch,
-  FiFilter,
   FiEdit2,
   FiCopy,
   FiTrash2,
   FiEye,
   FiEyeOff,
-  FiAlertTriangle,
   FiChevronLeft,
   FiChevronRight,
   FiRefreshCw,
@@ -24,7 +21,6 @@ import { ADMIN_PATH } from '../config/adminConfig';
 import './ProductsList.css';
 
 const ProductsList = () => {
-  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(false);
@@ -35,7 +31,7 @@ const ProductsList = () => {
   const categories = useAdminCategories();
   const [statusFilter, setStatusFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortBy] = useState('createdAt');
 
   // Bulk Selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -113,7 +109,7 @@ const ProductsList = () => {
     try {
       await adminApi.patch(`/products/${product._id}/status`, { status: newStatus });
       setProducts(products.map((p) => (p._id === product._id ? { ...p, status: newStatus } : p)));
-    } catch (err) {
+    } catch {
       alert('Status change failed');
     }
   };
@@ -124,7 +120,7 @@ const ProductsList = () => {
       const res = await adminApi.post(`/products/${product._id}/duplicate`);
       alert(`Duplicated: ${res.data.product?.name}`);
       fetchProducts(1);
-    } catch (err) {
+    } catch {
       alert('Duplicate failed');
     }
   };
@@ -136,7 +132,7 @@ const ProductsList = () => {
       await adminApi.delete(`/products/${deleteModalProduct._id}`);
       setDeleteModalProduct(null);
       fetchProducts(pagination.page);
-    } catch (err) {
+    } catch {
       alert('Failed to delete product');
     }
   };

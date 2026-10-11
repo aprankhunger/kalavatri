@@ -1,5 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
+import multer from 'multer';
+import sharp from 'sharp';
 import supabase from '../../db/supabase.js';
 import { requireAdminAuth } from '../../middleware/adminAuth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -13,6 +15,21 @@ import { logAuditEvent } from '../../utils/auditLogger.js';
 import { formatProductResponse } from '../productRoutes.js';
 
 const router = express.Router();
+
+const IMAGE_BUCKET = 'product-images';
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4 MB — stays under Vercel's serverless body cap
+const ALLOWED_UPLOAD_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Multer: keep the file in memory so we can hand the buffer straight to sharp
+// and then to Supabase Storage without touching the (read-only) serverless disk.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_UPLOAD_MIMES.includes(file.mimetype)) return cb(null, true);
+    cb(new Error('Unsupported image type. Upload a JPG, PNG, or WebP.'));
+  },
+});
 
 // Helper to generate URL-safe slugs
 const generateSlug = (text) => {
@@ -155,6 +172,64 @@ router.get('/:id', requireAdminAuth, requirePermission('products:read'), async (
     return res.status(500).json({ error: 'Server Error', message: error.message });
   }
 });
+
+// POST /api/admin/products/upload-image — Upload a product photo to Supabase Storage.
+// Accepts a single multipart file field named "image", converts it to an optimized
+// WebP (falling back to the original bytes if conversion fails), and returns a public URL.
+router.post(
+  '/upload-image',
+  requireAdminAuth,
+  requirePermission('products:write'),
+  (req, res) => {
+    upload.single('image')(req, res, async (uploadErr) => {
+      try {
+        if (uploadErr) {
+          const message =
+            uploadErr.code === 'LIMIT_FILE_SIZE'
+              ? 'Image is too large. Maximum size is 4 MB.'
+              : uploadErr.message || 'Image upload failed.';
+          return res.status(400).json({ error: 'Invalid upload', message });
+        }
+
+        if (!supabase) return res.status(500).json({ error: 'Storage unavailable' });
+        if (!req.file) {
+          return res.status(400).json({ error: 'Invalid upload', message: 'No image file provided.' });
+        }
+
+        // Optimize to WebP; if sharp is unavailable or the input is unreadable,
+        // fall back to storing the original bytes so the upload still succeeds.
+        let body = req.file.buffer;
+        let contentType = req.file.mimetype;
+        let ext = (req.file.mimetype.split('/')[1] || 'bin').replace('jpeg', 'jpg');
+        try {
+          body = await sharp(req.file.buffer)
+            .rotate()
+            .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer();
+          contentType = 'image/webp';
+          ext = 'webp';
+        } catch {
+          // keep original buffer/contentType/ext
+        }
+
+        const key = `products/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+
+        const { error: storageErr } = await supabase.storage
+          .from(IMAGE_BUCKET)
+          .upload(key, body, { contentType, upsert: false, cacheControl: '31536000' });
+
+        if (storageErr) throw new Error(storageErr.message);
+
+        const { data: publicData } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(key);
+
+        return res.status(201).json({ url: publicData.publicUrl, path: key });
+      } catch (error) {
+        return res.status(500).json({ error: 'Server Error', message: error.message });
+      }
+    });
+  }
+);
 
 // POST /api/admin/products — Create a new product
 router.post('/', requireAdminAuth, requirePermission('products:write'), validate(productCreateSchema), async (req, res) => {
@@ -330,19 +405,17 @@ router.post('/bulk', requireAdminAuth, requirePermission('products:write'), vali
   try {
     if (!supabase) return res.status(500).json({ error: 'Database unavailable' });
 
-    const { action, ids, data } = req.body;
+    const { action, productIds } = req.body;
     let updates = { updated_at: new Date().toISOString() };
 
     if (action === 'publish') updates.status = 'published';
-    else if (action === 'draft') updates.status = 'draft';
+    else if (action === 'unpublish') updates.status = 'draft';
     else if (action === 'delete') updates.is_deleted = true;
-    else if (action === 'price_update' && data?.price) updates.price = Number(data.price);
-    else if (action === 'stock_update' && data?.stockQuantity !== undefined) updates.stock_quantity = Number(data.stockQuantity);
 
     const { error } = await supabase
       .from('products')
       .update(updates)
-      .in('id', ids);
+      .in('id', productIds);
 
     if (error) throw new Error(error.message);
 
@@ -350,11 +423,11 @@ router.post('/bulk', requireAdminAuth, requirePermission('products:write'), vali
       req,
       action: `BULK_${action.toUpperCase()}`,
       resource: 'PRODUCTS',
-      details: { count: ids.length, action, ids },
+      details: { count: productIds.length, action, ids: productIds },
       adminUser: req.adminUser,
     });
 
-    return res.json({ message: `Bulk action '${action}' applied to ${ids.length} products.` });
+    return res.json({ message: `Bulk action '${action}' applied to ${productIds.length} products.` });
   } catch (error) {
     return res.status(500).json({ error: 'Server Error', message: error.message });
   }

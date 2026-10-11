@@ -1,4 +1,4 @@
-import { FiStar, FiCheckCircle } from 'react-icons/fi';
+import { FiCheckCircle } from 'react-icons/fi';
 import './TestimonialCard.css';
 
 const TestimonialCard = ({ review }) => {

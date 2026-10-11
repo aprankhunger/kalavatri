@@ -5,8 +5,8 @@ import {
   FiArrowLeft,
   FiSave,
   FiImage,
-  FiPlus,
-  FiTrash2,
+  FiUploadCloud,
+  FiX,
   FiCheckCircle,
   FiAlertCircle,
   FiPackage,
@@ -18,18 +18,6 @@ import { ADMIN_PATH } from '../config/adminConfig';
 import './ProductForm.css';
 
 const DEFAULT_SIZES = [5, 6, 7, 8, 9, 10];
-
-const SAMPLE_GALLERY_IMAGES = [
-  '/images/hero_banner.jpg',
-  '/images/jutti_maroon_gold.jpg',
-  '/images/jutti_pink_floral.jpg',
-  '/images/jutti_blue_silver.jpg',
-  '/images/jutti_green_paisley.jpg',
-  '/images/jutti_red_bridal.jpg',
-  '/images/jutti_white_pearl.jpg',
-  '/images/jutti_yellow_mirror.jpg',
-  '/images/jutti_black_leaf.jpg',
-];
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -51,15 +39,19 @@ const ProductForm = () => {
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
   const [costPrice, setCostPrice] = useState('');
-  const [image, setImage] = useState('/images/jutti_maroon_gold.jpg');
+  const [image, setImage] = useState('');
   const [images, setImages] = useState([]);
-  const [newImageUrl, setNewImageUrl] = useState('');
   const [status, setStatus] = useState('published');
   const [badge, setBadge] = useState('new');
   const [featured, setFeatured] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+
+  // Image upload state
+  const [uploadingPrimary, setUploadingPrimary] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
 
   // Variants state
   const [variants, setVariants] = useState([]);
@@ -98,7 +90,7 @@ const ProductForm = () => {
         setPrice(p.price || '');
         setOriginalPrice(p.originalPrice || '');
         setCostPrice(p.costPrice || '');
-        setImage(p.image || '/images/jutti_maroon_gold.jpg');
+        setImage(p.image || '');
         setImages(p.images || []);
         setStatus(p.status || 'published');
         setBadge(p.badge || '');
@@ -159,12 +151,51 @@ const ProductForm = () => {
     setVariants(updated);
   };
 
-  const handleAddGalleryImage = (url) => {
-    if (!url) return;
-    if (!images.includes(url)) {
-      setImages([...images, url]);
+  // Upload a single file to Supabase Storage via the admin API and return its public URL.
+  const uploadImageFile = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    // Unset the default JSON content-type so the browser sets the multipart boundary.
+    const res = await adminApi.post('/products/upload-image', formData, {
+      headers: { 'Content-Type': undefined },
+    });
+    return res.data.url;
+  };
+
+  const handlePrimaryUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setUploadError(null);
+    setUploadingPrimary(true);
+    try {
+      const url = await uploadImageFile(file);
+      setImage(url);
+      setImages((prev) => (prev.includes(url) ? prev : [url, ...prev]));
+    } catch (err) {
+      setUploadError(err.response?.data?.message || 'Image upload failed. Please try again.');
+    } finally {
+      setUploadingPrimary(false);
     }
-    setNewImageUrl('');
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    setUploadError(null);
+    setUploadingGallery(true);
+    try {
+      for (const file of files) {
+        const url = await uploadImageFile(file);
+        setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+        if (!image) setImage(url);
+      }
+    } catch (err) {
+      setUploadError(err.response?.data?.message || 'Image upload failed. Please try again.');
+    } finally {
+      setUploadingGallery(false);
+    }
   };
 
   const handleRemoveGalleryImage = (index) => {
@@ -249,7 +280,7 @@ const ProductForm = () => {
           type="button"
           className="admin-btn admin-btn-primary"
           onClick={handleSubmit}
-          disabled={saving || !name || !price}
+          disabled={saving || uploadingPrimary || uploadingGallery || !name || !price || !image}
         >
           <FiSave size={16} />
           <span>{saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Publish Product'}</span>
@@ -557,53 +588,88 @@ const ProductForm = () => {
               </h3>
             </div>
 
-            <div className="admin-form-group">
-              <label className="admin-label">Primary Image URL / Path</label>
-              <input
-                type="text"
-                placeholder="/images/jutti_maroon_gold.jpg"
-                className="admin-input"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                required
-              />
-            </div>
+            <input
+              id="primary-image-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={handlePrimaryUpload}
+            />
+            <input
+              id="gallery-image-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleGalleryUpload}
+            />
 
-            {image && (
+            {image ? (
               <div className="admin-image-preview-box">
                 <img
                   src={image}
-                  alt="Preview"
+                  alt="Primary"
                   className="admin-main-preview-img"
                   onError={(e) => { e.target.src = '/favicon.svg'; }}
                 />
+                <label htmlFor="primary-image-input" className="admin-btn admin-btn-secondary admin-upload-replace">
+                  <FiUploadCloud size={14} /> {uploadingPrimary ? 'Uploading…' : 'Replace image'}
+                </label>
               </div>
+            ) : (
+              <label htmlFor="primary-image-input" className="admin-upload-dropzone">
+                {uploadingPrimary ? (
+                  <span className="admin-upload-busy">Uploading…</span>
+                ) : (
+                  <>
+                    <FiUploadCloud size={28} />
+                    <span className="admin-upload-title">Upload primary image *</span>
+                    <span className="admin-upload-hint">JPG, PNG or WebP · up to 4 MB · auto-optimized to WebP</span>
+                  </>
+                )}
+              </label>
             )}
 
-            {/* Quick sample image picker */}
-            <div style={{ marginTop: '12px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '6px' }}>
-                Select from existing assets:
-              </span>
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px' }}>
-                {SAMPLE_GALLERY_IMAGES.map((sample, i) => (
-                  <img
-                    key={i}
-                    src={sample}
-                    alt="sample"
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      border: image === sample ? '2px solid var(--admin-gold)' : '1px solid var(--admin-border)',
-                    }}
-                    onClick={() => setImage(sample)}
-                  />
+            {uploadError && (
+              <p className="admin-upload-error"><FiAlertCircle size={13} /> {uploadError}</p>
+            )}
+
+            {/* Gallery images */}
+            <div className="admin-form-group" style={{ marginTop: '16px' }}>
+              <label className="admin-label">Gallery images</label>
+              <div className="admin-gallery-grid">
+                {images.map((img, i) => (
+                  <div key={i} className="admin-gallery-thumb">
+                    <img src={img} alt={`Gallery ${i + 1}`} onError={(e) => { e.target.src = '/favicon.svg'; }} />
+                    {img === image && <span className="admin-gallery-primary">Primary</span>}
+                    <button
+                      type="button"
+                      className="admin-gallery-remove"
+                      onClick={() => handleRemoveGalleryImage(i)}
+                      aria-label="Remove image"
+                    >
+                      <FiX size={12} />
+                    </button>
+                  </div>
                 ))}
+                <label htmlFor="gallery-image-input" className="admin-gallery-add" title="Add gallery images">
+                  {uploadingGallery ? <span className="admin-upload-busy">…</span> : <FiUploadCloud size={18} />}
+                </label>
               </div>
             </div>
+
+            {/* URL fallback for power users */}
+            <details className="admin-url-fallback">
+              <summary>Or paste an image URL instead</summary>
+              <input
+                type="text"
+                placeholder="https://… or /images/…"
+                className="admin-input"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+                style={{ marginTop: '8px' }}
+              />
+            </details>
           </div>
 
           {/* Search Engine Optimization */}

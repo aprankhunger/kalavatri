@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  FiShield,
-  FiFilter,
   FiRefreshCw,
   FiChevronLeft,
   FiChevronRight,

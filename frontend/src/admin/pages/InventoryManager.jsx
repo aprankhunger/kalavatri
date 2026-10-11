@@ -5,9 +5,7 @@ import {
   FiAlertTriangle,
   FiXCircle,
   FiRefreshCw,
-  FiPlus,
   FiClock,
-  FiCheckCircle,
   FiArrowUp,
   FiArrowDown,
 } from 'react-icons/fi';

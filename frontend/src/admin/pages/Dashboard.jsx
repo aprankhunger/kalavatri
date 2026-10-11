@@ -4,11 +4,9 @@ import {
   FiShield,
   FiPackage,
   FiShoppingBag,
-  FiUsers,
   FiClock,
   FiCheckCircle,
   FiLock,
-  FiAlertTriangle,
   FiArrowRight,
 } from 'react-icons/fi';
 import { useAdminAuth } from '../context/AdminAuthContext';
