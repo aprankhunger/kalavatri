@@ -44,11 +44,22 @@ const loadCatalogue = async (items) => {
 // In-memory cache for pincode lookups
 const pincodeCache = new Map();
 
-// Helper to generate readable order numbers
-const generateOrderNumber = () => {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `KV-${dateStr}-${randomSuffix}`;
+// Pulls the next short, sequential order number from the DB (e.g. "KV-10001").
+// Postgres owns the counter, so the value is guaranteed unique even under
+// concurrent checkouts — short enough to read aloud for dispatch, with no
+// collision retry needed. See migration 004_order_number_sequence.sql.
+const nextOrderNumber = async () => {
+  if (supabase) {
+    const { data, error } = await supabase.rpc('next_order_number');
+    if (!error && data) return data;
+    if (/Could not find the function|does not exist|schema cache/i.test(error?.message || '')) {
+      console.error('[Orders] next_order_number RPC missing — run migration 004_order_number_sequence.sql');
+    } else {
+      console.error('[Orders] next_order_number RPC failed, using local fallback:', error?.message);
+    }
+  }
+  // Offline/dev or RPC not yet migrated → local fallback (not sequential).
+  return `KV-${Math.floor(10000 + Math.random() * 90000)}`;
 };
 
 // Helper to format Supabase order row into standard structure
@@ -285,7 +296,7 @@ router.post('/', async (req, res) => {
     }
 
     const totalAmount = Math.max(0, calculatedSubtotal + serverDeliveryFee - serverDiscount);
-    const orderNumber = generateOrderNumber();
+    const orderNumber = await nextOrderNumber();
 
     const orderPayload = {
       order_number: orderNumber,

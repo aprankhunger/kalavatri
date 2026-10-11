@@ -67,11 +67,11 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-// Helper method to generate readable order numbers
+// Short order number, e.g. "KV-10001". NOTE: the live checkout path runs on
+// Supabase/Postgres and gets its number from the next_order_number() DB
+// sequence (see migration 004); this helper is a fallback for the Mongoose path.
 orderSchema.statics.generateOrderNumber = function () {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `KV-${dateStr}-${randomSuffix}`;
+  return `KV-${Math.floor(10000 + Math.random() * 90000)}`;
 };
 
 const Order = mongoose.model('Order', orderSchema);
