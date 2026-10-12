@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import supabase from '../db/supabase.js';
-import razorpay, { razorpayKeyId } from '../utils/razorpay.js';
+import razorpay, { razorpayKeyId, createRazorpayOrder } from '../utils/razorpay.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
 import { getSetting } from '../utils/storeSettings.js';
 import { evaluateCoupon, redeemCoupon } from '../utils/couponEngine.js';
@@ -372,19 +372,21 @@ router.post('/', async (req, res) => {
       return res.status(201).json({ success: true, message: 'Order confirmed', order: finalized, razorpay: null });
     }
 
-    // 4. No gateway configured → leave order pending, tell the client.
+    // 4. No gateway configured → hard-fail so the user knows immediately.
     if (!razorpay) {
-      return res.status(201).json({
-        success: true,
-        message: 'Order created, but online payment is not configured.',
-        order: formatOrderResponse(orderRow),
-        razorpay: null,
+      await supabase.rpc('release_order_stock', { p_items: orderItems, p_order_ref: orderNumber }).then(() => {}, () => {});
+      await supabase.from('orders').update({ payment_status: 'failed', order_status: 'cancelled' }).eq('id', orderRow.id);
+      return res.status(503).json({
+        success: false,
+        message: 'Online payment is temporarily unavailable. Please contact support.',
       });
     }
 
     // 5. Create the Razorpay order the browser will pay against.
+    //    createRazorpayOrder includes a 10s timeout and automatic retry on
+    //    transient failures so the user doesn't see intermittent errors.
     try {
-      const rzpOrder = await razorpay.orders.create({
+      const rzpOrder = await createRazorpayOrder({
         amount: Math.round(totalAmount * 100), // paise
         currency: 'INR',
         receipt: orderNumber,
@@ -403,7 +405,11 @@ router.post('/', async (req, res) => {
       await supabase.rpc('release_order_stock', { p_items: orderItems, p_order_ref: orderNumber }).then(() => {}, () => {});
       await supabase.from('orders').update({ payment_status: 'failed', order_status: 'cancelled' }).eq('id', orderRow.id);
       console.error('[Orders] Razorpay order creation failed:', payErr.message);
-      return res.status(502).json({ success: false, message: 'Could not start the payment. Please try again.' });
+      const status = payErr.statusCode || 502;
+      const userMsg = payErr.message === 'Razorpay API timed out'
+        ? 'Payment gateway is slow right now. Please try again in a moment.'
+        : 'Could not start the payment. Please try again.';
+      return res.status(status).json({ success: false, message: userMsg });
     }
   } catch (error) {
     return res.status(500).json({

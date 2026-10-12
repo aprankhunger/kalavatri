@@ -5,8 +5,13 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 8000,
+  timeout: 15000,
 });
+
+// Longer timeout for checkout/payment calls — these chain multiple backend
+// hops (stock reservation → DB insert → Razorpay API → DB update) and a
+// tight limit causes false "timeout" failures on slower connections.
+const CHECKOUT_TIMEOUT = 45000;
 
 export const getProducts = async (params = {}) => {
   try {
@@ -70,17 +75,17 @@ export const lookupPincode = async (pincode) => {
 };
 
 export const createOrder = async (payload) => {
-  const { data } = await api.post('/orders', payload);
+  const { data } = await api.post('/orders', payload, { timeout: CHECKOUT_TIMEOUT });
   return data;
 };
 
 export const verifyPayment = async (payload) => {
-  const { data } = await api.post('/orders/verify-payment', payload);
+  const { data } = await api.post('/orders/verify-payment', payload, { timeout: CHECKOUT_TIMEOUT });
   return data;
 };
 
 export const cancelOrder = async (orderNumber, razorpayOrderId) => {
-  const { data } = await api.post(`/orders/${orderNumber}/cancel`, { razorpay_order_id: razorpayOrderId });
+  const { data } = await api.post(`/orders/${orderNumber}/cancel`, { razorpay_order_id: razorpayOrderId }, { timeout: CHECKOUT_TIMEOUT });
   return data;
 };
 
