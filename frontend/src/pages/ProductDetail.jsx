@@ -19,6 +19,7 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isAdded, setIsAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // Reset isAdded if user changes their mind on size or color
   useEffect(() => {
@@ -29,8 +30,6 @@ const ProductDetail = () => {
     const fetchProductData = async () => {
       setLoading(true);
       window.scrollTo(0, 0);
-      // Fetch the product and the catalog (for related items) in parallel
-      // instead of waiting for one before starting the other.
       const [data, allProducts] = await Promise.all([
         getProductBySlug(slug),
         getProducts(),
@@ -41,6 +40,7 @@ const ProductDetail = () => {
       if (data) {
         if (data.sizes && data.sizes.length > 0) setSelectedSize(data.sizes[0]);
         if (data.colors && data.colors.length > 0) setSelectedColor(data.colors[0]);
+        setSelectedImage(data.image || (data.images && data.images[0]) || null);
       }
       setLoading(false);
     };
@@ -64,8 +64,17 @@ const ProductDetail = () => {
     );
   }
 
-  // Generate fake thumbnails by repeating the main image for the Figma layout
-  const thumbnails = [product.image, product.image, product.image];
+  // Combine product.images with product.image, filtering empty values and eliminating duplicates
+  const rawGallery = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.filter(Boolean)
+    : [];
+  if (product.image && !rawGallery.includes(product.image)) {
+    rawGallery.unshift(product.image);
+  }
+  const galleryImages = rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []);
+
+  // Current display image fallback
+  const displayImage = selectedImage || product.image || galleryImages[0];
 
   // Map color names to hex codes for UI
   const colorMap = {
@@ -95,15 +104,24 @@ const ProductDetail = () => {
       {/* Product Main Section */}
       <section className="product-main container">
         <div className="product-gallery">
-          <div className="thumbnails">
-            {thumbnails.map((img, idx) => (
-              <div key={idx} className="thumbnail active">
-                <img src={img} alt={`Thumbnail ${idx+1}`} />
-              </div>
-            ))}
-          </div>
+          {galleryImages.length > 1 && (
+            <div className="thumbnails">
+              {galleryImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className={`thumbnail ${displayImage === img ? 'active' : ''}`}
+                  onClick={() => setSelectedImage(img)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setSelectedImage(img); }}
+                >
+                  <img src={img} alt={`${product.name} view ${idx + 1}`} />
+                </div>
+              ))}
+            </div>
+          )}
           <div className="main-image">
-            <img src={product.image} alt={product.name} />
+            <img src={displayImage} alt={product.name} />
           </div>
         </div>
 
@@ -119,8 +137,6 @@ const ProductDetail = () => {
               <span className="price-discount">-{product.discount}%</span>
             )}
           </div>
-          
-          <p className="pdp-description">{product.description}</p>
           
           <div className="divider"></div>
 
@@ -222,9 +238,10 @@ const ProductDetail = () => {
         <div className="tab-content">
           {activeTab === 'details' && (
             <div className="tab-pane">
-              <h3>Product Specification</h3>
-              <p>{product.description}</p>
-              <ul style={{ marginTop: '20px', marginLeft: '20px' }}>
+              <h3>Product Description</h3>
+              <p style={{ whiteSpace: 'pre-line' }}>{product.description}</p>
+              <h3 style={{ marginTop: '28px' }}>Product Specification</h3>
+              <ul style={{ marginTop: '12px', marginLeft: '20px' }}>
                 <li style={{ marginBottom: '10px' }}><strong>Material:</strong> 100% Genuine Leather</li>
                 <li style={{ marginBottom: '10px' }}><strong>Sole:</strong> Cushioned Double-padded</li>
                 <li style={{ marginBottom: '10px' }}><strong>Embellishment:</strong> Hand-stitched Zardozi / Threadwork</li>
