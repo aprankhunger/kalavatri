@@ -634,7 +634,7 @@ const Checkout = () => {
                     <div className="summary-item-details">
                       <h4 className="item-name">{item.name}</h4>
                       <p className="item-variant">
-                        Size: <strong>{item.size || 'Standard'}</strong> | Color: <strong>{item.color || 'As Shown'}</strong>
+                        Size: <strong>{item.size || 'Standard'}</strong>
                       </p>
                       <span className="item-price">₹{(item.price * item.quantity).toLocaleString()}</span>
                     </div>
@@ -713,3 +713,4 @@ const Checkout = () => {
 };
 
 export default Checkout;
+

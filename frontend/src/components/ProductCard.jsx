@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
-  const { _id, name, slug, price, originalPrice, discount, image, sizes = [], colors = [], inStock = true } = product;
+  const { _id, name, slug, price, originalPrice, discount, image, sizes = [], inStock = true } = product;
   const { addToCart, isInCart } = useCart();
   const navigate = useNavigate();
   const inCart = isInCart(_id);
@@ -22,7 +22,7 @@ const ProductCard = ({ product }) => {
       navigate('/cart');
       return;
     }
-    addToCart(product, 1, sizes[0] ?? null, colors[0] ?? null);
+    addToCart(product, 1, sizes[0] ?? null, null);
   };
 
   return (

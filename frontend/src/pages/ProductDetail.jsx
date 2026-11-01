@@ -14,17 +14,16 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   
   const [selectedSize, setSelectedSize] = useState(null);
-  const [selectedColor, setSelectedColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('details');
   const [isAdded, setIsAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Reset isAdded if user changes their mind on size or color
+  // Reset isAdded if user changes their mind on size
   useEffect(() => {
     setIsAdded(false);
-  }, [selectedSize, selectedColor]);
+  }, [selectedSize]);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -39,7 +38,6 @@ const ProductDetail = () => {
 
       if (data) {
         if (data.sizes && data.sizes.length > 0) setSelectedSize(data.sizes[0]);
-        if (data.colors && data.colors.length > 0) setSelectedColor(data.colors[0]);
         setSelectedImage(data.image || (data.images && data.images[0]) || null);
       }
       setLoading(false);
@@ -76,21 +74,6 @@ const ProductDetail = () => {
   // Current display image fallback
   const displayImage = selectedImage || product.image || galleryImages[0];
 
-  // Map color names to hex codes for UI
-  const colorMap = {
-    'Maroon': '#731F26',
-    'Gold': '#D9AE79',
-    'Pink': '#FFB6C1',
-    'Green': '#2E8B57',
-    'Blue': '#000080',
-    'Silver': '#C0C0C0',
-    'Red': '#FF0000',
-    'Ivory': '#FFFFF0',
-    'Pearl': '#FDF6E3',
-    'Yellow': '#FFD700',
-    'Multi': '#FF4500',
-    'Black': '#000000'
-  };
 
   return (
     <div className="product-detail-page">
@@ -140,28 +123,6 @@ const ProductDetail = () => {
           
           <div className="divider"></div>
 
-          {/* Colors */}
-          {product.colors && product.colors.length > 0 && (
-            <div className="pdp-colors">
-              <span className="option-label">Select Colors</span>
-              <div className="color-options">
-                {product.colors.map(color => (
-                  <button 
-                    key={color} 
-                    className={`color-btn ${selectedColor === color ? 'active' : ''}`}
-                    style={{ backgroundColor: colorMap[color] || '#000' }}
-                    onClick={() => setSelectedColor(color)}
-                    title={color}
-                  >
-                    {selectedColor === color && <span className="checkmark">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="divider"></div>
-
           {/* Sizes */}
           {product.sizes && product.sizes.length > 0 && (
             <div className="pdp-sizes">
@@ -207,7 +168,7 @@ const ProductDetail = () => {
               <button 
                 className="btn btn-primary add-to-cart-btn"
                 onClick={() => {
-                  addToCart(product, quantity, selectedSize, selectedColor);
+                  addToCart(product, quantity, selectedSize, null);
                   setIsAdded(true);
                 }}
               >
@@ -301,3 +262,4 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
+

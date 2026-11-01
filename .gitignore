@@ -7,3 +7,6 @@ build/
 .gsd/
 .agent/
 .agents/
+
+# Raw stock image assets (uploaded to Supabase Storage CDN)
+[Kk]alavatri stock/

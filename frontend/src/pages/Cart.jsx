@@ -37,7 +37,7 @@ const Cart = () => {
           <div className="cart-layout">
             <div className="cart-items stagger-children visible">
               {cartItems.map((item, index) => (
-                <div key={`${item._id}-${item.size}-${item.color}`} className="cart-item">
+                <div key={`${item._id}-${item.size}`} className="cart-item">
                   <Link to={`/product/${item.slug}`} className="cart-item-image">
                     <img src={item.image} alt={item.name} />
                   </Link>
@@ -53,7 +53,6 @@ const Cart = () => {
 
                     <div className="cart-item-attributes">
                       <p>Size: <span>{item.size || 'Standard'}</span></p>
-                      <p>Color: <span>{item.color || 'As shown'}</span></p>
                     </div>
 
                     <div className="cart-item-footer">
