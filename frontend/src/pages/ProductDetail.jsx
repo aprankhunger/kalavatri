@@ -6,6 +6,16 @@ import Newsletter from '../components/Newsletter';
 import { useCart } from '../context/CartContext';
 import './ProductDetail.css';
 
+const sanitizeHtml = (html) => {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+};
+
 const ProductDetail = () => {
   const { slug } = useParams();
   const { addToCart } = useCart();
@@ -200,7 +210,14 @@ const ProductDetail = () => {
           {activeTab === 'details' && (
             <div className="tab-pane">
               <h3>Product Description</h3>
-              <p style={{ whiteSpace: 'pre-line' }}>{product.description}</p>
+              {/<[a-z][\s\S]*>/i.test(product.description || '') ? (
+                <div
+                  className="product-description-html"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
+                />
+              ) : (
+                <p style={{ whiteSpace: 'pre-line' }}>{product.description}</p>
+              )}
               <h3 style={{ marginTop: '28px' }}>Product Specification</h3>
               <ul style={{ marginTop: '12px', marginLeft: '20px' }}>
                 <li style={{ marginBottom: '10px' }}><strong>Material:</strong> 100% Genuine Leather</li>

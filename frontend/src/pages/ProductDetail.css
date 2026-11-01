@@ -361,6 +361,33 @@
 .tab-pane p {
   color: var(--text-body);
   line-height: 1.7;
+  margin-bottom: 14px;
+}
+.tab-pane p:last-child {
+  margin-bottom: 0;
+}
+.product-description-html p {
+  color: var(--text-body);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.product-description-html p:last-child {
+  margin-bottom: 0;
+}
+.product-description-html ul {
+  margin: 12px 0 16px 20px;
+  color: var(--text-body);
+  line-height: 1.7;
+}
+.product-description-html li {
+  margin-bottom: 8px;
+}
+.product-description-html strong {
+  color: var(--text-dark);
+}
+.product-description-html em {
+  font-style: italic;
+  color: var(--text-muted, #666);
 }
 
 /* === Responsive === */
