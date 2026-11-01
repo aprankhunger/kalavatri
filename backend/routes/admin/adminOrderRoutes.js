@@ -49,7 +49,13 @@ router.get('/', requireAdminAuth, requirePermission('orders:read'), async (req, 
 
     return res.json({
       orders: (data || []).map(formatOrderResponse),
-      pagination: { page, limit, total: count || 0, pages: Math.max(1, Math.ceil((count || 0) / limit)) },
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        pages: Math.max(1, Math.ceil((count || 0) / limit)),
+        totalPages: Math.max(1, Math.ceil((count || 0) / limit)),
+      },
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

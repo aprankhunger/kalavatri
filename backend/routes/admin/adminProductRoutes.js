@@ -85,7 +85,7 @@ const mapToProductDbRow = (body) => {
 router.get('/', requireAdminAuth, requirePermission('products:read'), async (req, res) => {
   try {
     if (!supabase) {
-      return res.json({ products: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } });
+      return res.json({ products: [], pagination: { total: 0, page: 1, pages: 1, totalPages: 1, limit: 20 } });
     }
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -133,6 +133,7 @@ router.get('/', requireAdminAuth, requirePermission('products:read'), async (req
         total,
         page,
         pages: Math.ceil(total / limit) || 1,
+        totalPages: Math.ceil(total / limit) || 1,
         limit,
       },
     });

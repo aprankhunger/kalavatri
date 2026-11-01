@@ -22,7 +22,8 @@ import './ProductsList.css';
 
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
+  const [limit, setLimit] = useState(50);
+  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(false);
 
   // Filters
@@ -40,12 +41,12 @@ const ProductsList = () => {
   // Delete modal state
   const [deleteModalProduct, setDeleteModalProduct] = useState(null);
 
-  const fetchProducts = useCallback(async (page = 1) => {
+  const fetchProducts = useCallback(async (page = 1, pageSize = limit) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: '15',
+        limit: String(pageSize),
       });
       if (search) params.append('search', search);
       if (categoryFilter) params.append('category', categoryFilter);
@@ -54,19 +55,27 @@ const ProductsList = () => {
       if (sortBy) params.append('sort', sortBy);
 
       const res = await adminApi.get(`/products?${params.toString()}`);
-      setProducts(res.data.products || []);
-      setPagination(res.data.pagination || { page: 1, limit: 15, total: 0, totalPages: 1 });
+      const rawProducts = res.data.products || [];
+      const total = res.data.pagination?.total ?? rawProducts.length;
+      const totalPages = res.data.pagination?.totalPages || res.data.pagination?.pages || Math.ceil(total / pageSize) || 1;
+      setProducts(rawProducts);
+      setPagination({
+        page: res.data.pagination?.page || page,
+        limit: pageSize,
+        total,
+        totalPages,
+      });
       setSelectedIds([]);
     } catch (err) {
       console.error('Failed to load products:', err.message);
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, statusFilter, stockFilter, sortBy]);
+  }, [search, categoryFilter, statusFilter, stockFilter, sortBy, limit]);
 
   useEffect(() => {
-    fetchProducts(1);
-  }, [fetchProducts]);
+    fetchProducts(1, limit);
+  }, [fetchProducts, limit]);
 
   // Bulk select toggles
   const handleSelectAll = () => {
@@ -433,8 +442,28 @@ const ProductsList = () => {
 
         {/* Pagination Bar */}
         <div className="admin-table-footer">
-          <div>
-            Showing {products.length} of {pagination.total} catalog items
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              Showing {products.length} of {pagination.total} catalog items
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', color: '#6B7280' }}>Show:</span>
+              <select
+                className="admin-select"
+                style={{ padding: '4px 8px', fontSize: '13px', minWidth: '70px' }}
+                value={limit}
+                onChange={(e) => {
+                  const newLimit = Number(e.target.value);
+                  setLimit(newLimit);
+                  fetchProducts(1, newLimit);
+                }}
+              >
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -442,7 +471,8 @@ const ProductsList = () => {
               className="admin-btn admin-btn-secondary"
               style={{ padding: '6px 12px' }}
               disabled={pagination.page <= 1}
-              onClick={() => fetchProducts(pagination.page - 1)}
+              onClick={() => fetchProducts(pagination.page - 1, limit)}
+              title="Previous page"
             >
               <FiChevronLeft />
             </button>
@@ -452,8 +482,9 @@ const ProductsList = () => {
             <button
               className="admin-btn admin-btn-secondary"
               style={{ padding: '6px 12px' }}
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => fetchProducts(pagination.page + 1)}
+              disabled={pagination.page >= (pagination.totalPages || 1)}
+              onClick={() => fetchProducts(pagination.page + 1, limit)}
+              title="Next page"
             >
               <FiChevronRight />
             </button>
